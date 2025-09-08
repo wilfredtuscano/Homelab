@@ -1,0 +1,12 @@
+# dotenv
+.env
+*.env
+
+# docker / volumes
+data/
+volumes/
+
+# editor
+.vscode/
+.idea/
+.DS_Store
