@@ -1,0 +1,31 @@
+services:
+  portainer:
+    image: portainer/portainer-ce
+    container_name: portainer
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=US/Pacific
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - data:/data
+    ports:
+      - 8000:8000
+      - 9443:9443
+    restart: unless-stopped
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=US/Pacific
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_SCHEDULE=0 0 3 * * *
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+volumes:
+  data:
