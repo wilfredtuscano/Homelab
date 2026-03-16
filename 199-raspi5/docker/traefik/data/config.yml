@@ -1,0 +1,284 @@
+http:
+  routers:
+    gateway:
+      entryPoints:
+        - "https"
+      rule: "Host(`gateway.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: gateway
+    router:
+      entryPoints:
+        - "https"
+      rule: "Host(`router.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: router
+    pihole:
+      entryPoints:
+        - "https"
+      rule: "Host(`pihole.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: pihole
+    portainer:
+      entryPoints:
+        - "https"
+      rule: "Host(`portainer.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: portainer
+    proxmox:
+      entryPoints:
+        - "https"
+      rule: "Host(`proxmox.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: proxmox
+    truenas:
+      entryPoints:
+        - "https"
+      rule: "Host(`truenas.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: truenas
+    qbittorrent:
+      entryPoints:
+        - "https"
+      rule: "Host(`qbittorrent.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: qbittorrent
+    firefox:
+      entryPoints:
+        - "https"
+      rule: "Host(`firefox.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: firefox
+    prowlarr:
+      entryPoints:
+        - "https"
+      rule: "Host(`prowlarr.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: prowlarr
+    radarr:
+      entryPoints:
+        - "https"
+      rule: "Host(`radarr.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: radarr
+    sonarr:
+      entryPoints:
+        - "https"
+      rule: "Host(`sonarr.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: sonarr
+    lidarr:
+      entryPoints:
+        - "https"
+      rule: "Host(`lidarr.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: lidarr
+    readarr:
+      entryPoints:
+        - "https"
+      rule: "Host(`readarr.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: readarr
+    metube:
+      entryPoints:
+        - "https"
+      rule: "Host(`metube.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: metube
+    plex:
+      entryPoints:
+        - "https"
+      rule: "Host(`plex.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: plex
+    vaultwarden:
+      entryPoints:
+        - "https"
+      rule: "Host(`vaultwarden.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: vaultwarden
+    ollama:
+      entryPoints:
+        - "https"
+      rule: "Host(`ollama.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: ollama
+    chat:
+      entryPoints:
+        - "https"
+      rule: "Host(`chat.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: chat
+
+  services:
+    gateway:
+      loadBalancer:
+        servers:
+          - url: "http://10.0.0.1/"
+        passHostHeader: true
+    router:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.1/"
+        passHostHeader: true
+    pihole:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.199:8080/"
+        passHostHeader: true
+    portainer:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.1.199:9443/"
+        passHostHeader: true
+    proxmox:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.1.200:8006/"
+        passHostHeader: true
+    truenas:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.201/"
+        passHostHeader: true
+    qbittorrent:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.202:8090/"
+        passHostHeader: true
+    firefox:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.1.202:3001/"
+        passHostHeader: true
+    prowlarr:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.202:9696/"
+        passHostHeader: true
+    radarr:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.202:7878/"
+        passHostHeader: true
+    sonarr:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.202:8989/"
+        passHostHeader: true
+    lidarr:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.202:8686/"
+        passHostHeader: true
+    readarr:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.202:8787/"
+        passHostHeader: true
+    metube:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.202:8081/"
+        passHostHeader: true
+    plex:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.203:32400/"
+        passHostHeader: true
+    vaultwarden:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.204:80"
+        passHostHeader: true
+    ollama:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.205:11434/"
+        passHostHeader: true
+    chat:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.205:3000/"
+        passHostHeader: true
+
+  middlewares:
+    https-redirectscheme:
+      redirectScheme:
+        scheme: https
+        permanent: true
+    default-headers:
+      headers:
+        frameDeny: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 15552000
+        customFrameOptionsValue: SAMEORIGIN
+        customRequestHeaders:
+          X-Forwarded-Proto: https
+    default-whitelist:
+      ipAllowList:
+        sourceRange:
+        - "192.168.1.0/16"
+    secured:
+      chain:
+        middlewares:
+        - default-whitelist
+        - default-headers
+

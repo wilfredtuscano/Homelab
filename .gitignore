@@ -6,6 +6,15 @@
 data/
 volumes/
 
+# traefik config override (data/ is globally ignored, but traefik uses it for config files)
+# TODO: rename traefik config folder away from data/ to avoid this override
+!199-raspi5/docker/traefik/data/
+!199-raspi5/docker/traefik/data/*.yml
+199-raspi5/docker/traefik/data/acme.json
+
+# secrets
+cf_api_token.txt
+
 # editor
 .vscode/
 .idea/
