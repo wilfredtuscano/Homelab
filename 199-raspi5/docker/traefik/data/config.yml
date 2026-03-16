@@ -18,6 +18,15 @@ http:
         - https-redirectscheme
       tls: {}
       service: router
+    pihole:
+      entryPoints:
+        - "https"
+      rule: "Host(`pihole.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: pihole
     portainer:
       entryPoints:
         - "https"
@@ -54,6 +63,15 @@ http:
         - https-redirectscheme
       tls: {}
       service: qbittorrent
+    firefox:
+      entryPoints:
+        - "https"
+      rule: "Host(`firefox.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: firefox
     prowlarr:
       entryPoints:
         - "https"
@@ -156,6 +174,11 @@ http:
         servers:
           - url: "http://192.168.1.1/"
         passHostHeader: true
+    pihole:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.199:8080/"
+        passHostHeader: true
     portainer:
       loadBalancer:
         servers:
@@ -175,6 +198,11 @@ http:
       loadBalancer:
         servers:
           - url: "http://192.168.1.202:8090/"
+        passHostHeader: true
+    firefox:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.1.202:3001/"
         passHostHeader: true
     prowlarr:
       loadBalancer:
