@@ -3,6 +3,14 @@
 **IP:** 192.168.1.205
 **OS:** Ubuntu Server
 
+## Hardware
+
+| Component | Details |
+|---|---|
+| Device | GMKTec Evo-X2 |
+| SoC | AMD Strix Halo |
+| RAM | 128 GB |
+
 ## Role
 
 Local AI inference server running Ollama with OpenWebUI as a frontend.
@@ -20,6 +28,6 @@ Local AI inference server running Ollama with OpenWebUI as a frontend.
 
 | Folder | Services |
 |---|---|
-| [docker/portainer/](docker/portainer/) | Portainer, Watchtower |
+| [docker/portainer/](docker/portainer/) | Portainer Edge Agent |
 | [docker/ollama/](docker/ollama/) | Ollama |
 | [docker/openwebui/](docker/openwebui/) | OpenWebUI |

@@ -4,6 +4,13 @@
 **OS:** Ubuntu Server
 **Host:** Proxmox (192.168.1.200)
 
+## VM Specs
+
+| Resource | Value |
+|---|---|
+| vCPU | 6 cores |
+| RAM | 16 GB |
+
 ## Role
 
 Runs Plex Media Server, consuming media from TrueNAS over NFS.
@@ -21,5 +28,5 @@ Runs Plex Media Server, consuming media from TrueNAS over NFS.
 
 | Folder | Services |
 |---|---|
-| [docker/portainer/](docker/portainer/) | Portainer, Watchtower |
+| [docker/portainer/](docker/portainer/) | Portainer Edge Agent |
 | [docker/plex/](docker/plex/) | Plex |

@@ -10,6 +10,7 @@
 | TrueNAS Core 13 | 192.168.1.201 | — | VM on Proxmox |
 | Ubuntu - Starr | 192.168.1.202 | — | VM on Proxmox |
 | Ubuntu - Plex | 192.168.1.203 | — | VM on Proxmox |
+| Ubuntu - Cloud | 192.168.1.204 | — | VM on Proxmox (planned) |
 | GMKTec Evo-X2 | 192.168.1.205 | — | Static via router DHCP reservation |
 
 ## DNS (Pi-hole on 192.168.1.199)
@@ -21,6 +22,14 @@ Pi-hole is the primary DNS for the network. Local DNS records are managed in the
 | pihole.home | 192.168.1.199 | Pi-hole |
 | traefik.home | 192.168.1.199 | Traefik dashboard |
 | portainer.home | 192.168.1.199 | Portainer |
+
+## Remote Access (Tailscale)
+
+Tailscale is installed on RasPi5 as a **subnet router**, advertising `192.168.1.0/24`. Client devices (Mac, Android) connect to Tailscale and can reach all homelab LAN IPs without any router port forwarding.
+
+Split DNS is configured in the Tailscale admin console to route `local.wilfredtuscano.com` queries through Pi-hole when connected to Tailscale.
+
+See [guides/tailscale.md](guides/tailscale.md) for full setup.
 
 ## Ports
 
