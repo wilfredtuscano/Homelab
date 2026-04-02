@@ -17,11 +17,12 @@ Runs Plex Media Server, consuming media from TrueNAS over NFS.
 
 ## Setup
 
-1. [Set a static IP](../../guides/static-ip.md)
-2. [Install Docker](../../guides/docker-install.md)
-3. [Mount NFS share from TrueNAS](../../guides/zfs-mount.md)
-4. Deploy stacks:
-   1. `docker/portainer/`
+1. [Enable SSH server](../../guides/ssh.md)
+2. [Set a static IP](../../guides/static-ip.md)
+3. [Install Docker](../../guides/docker-install.md)
+4. [Mount NFS share from TrueNAS](../../guides/zfs-mount.md)
+5. Deploy stacks:
+   1. `docker/portainer/` — see [Portainer Edge Agent guide](../../guides/portainer-edge-agent.md)
    2. `docker/plex/`
 
 ## Docker Stacks

@@ -144,6 +144,24 @@ http:
         - https-redirectscheme
       tls: {}
       service: vaultwarden
+    nextcloud:
+      entryPoints:
+        - "https"
+      rule: "Host(`nextcloud.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: nextcloud
+    collabora:
+      entryPoints:
+        - "https"
+      rule: "Host(`collabora.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: collabora
     ollama:
       entryPoints:
         - "https"
@@ -242,7 +260,17 @@ http:
     vaultwarden:
       loadBalancer:
         servers:
-          - url: "http://192.168.1.204:80"
+          - url: "http://192.168.1.204:8082/"
+        passHostHeader: true
+    nextcloud:
+      loadBalancer:
+        servers:
+          - url: "https://192.168.1.204:8443/"
+        passHostHeader: true
+    collabora:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.204:9980/"
         passHostHeader: true
     ollama:
       loadBalancer:
