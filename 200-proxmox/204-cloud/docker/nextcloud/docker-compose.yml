@@ -9,7 +9,7 @@ services:
     ports:
       - "8443:443"
     volumes:
-      - nextcloud_config:/config
+      - ./config:/config
       - /mnt/nfs/nextcloud:/data
     networks:
       - nextcloud_internal
@@ -29,7 +29,7 @@ services:
       - MARIADB_USER=nextcloud
       - MARIADB_PASSWORD=${MARIADB_PASSWORD}
     volumes:
-      - nextcloud_db:/var/lib/mysql
+      - ./db:/var/lib/mysql
     networks:
       - nextcloud_internal
     healthcheck:
@@ -42,8 +42,6 @@ services:
   nextcloud_redis:
     image: redis:alpine
     container_name: nextcloud_redis
-    volumes:
-      - nextcloud_redis:/data
     networks:
       - nextcloud_internal
     restart: unless-stopped
@@ -63,8 +61,3 @@ services:
 
 networks:
   nextcloud_internal:
-
-volumes:
-  nextcloud_config:
-  nextcloud_db:
-  nextcloud_redis:

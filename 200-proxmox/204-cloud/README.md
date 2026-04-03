@@ -46,13 +46,14 @@ Traefik on 199 routes traffic via file provider — see `199-raspi5/docker/traef
 
 ## TrueNAS — NFS dataset setup
 
-Only one dataset is needed for NextCloud. MariaDB runs on a local Docker volume.
+Only one dataset is needed for NextCloud. MariaDB runs on a local bind mount (`./db`).
 
 ```bash
 # In TrueNAS Shell — set ownership to uid=1000 (matches VM user and PUID in compose)
 chown -R 1000:1000 /mnt/<pool>/Nextcloud
 chmod -R 750 /mnt/<pool>/Nextcloud
 ```
+
 
 ## NextCloud — post-install config
 
