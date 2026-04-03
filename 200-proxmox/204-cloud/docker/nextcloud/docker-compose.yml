@@ -1,0 +1,63 @@
+services:
+  nextcloud:
+    image: lscr.io/linuxserver/nextcloud:latest
+    container_name: nextcloud
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Los_Angeles
+    ports:
+      - "8443:443"
+    volumes:
+      - ./config:/config
+      - /mnt/nfs/nextcloud:/data
+    networks:
+      - nextcloud_internal
+    depends_on:
+      nextcloud_db:
+        condition: service_healthy
+      nextcloud_redis:
+        condition: service_started
+    restart: unless-stopped
+
+  nextcloud_db:
+    image: mariadb:11
+    container_name: nextcloud_db
+    environment:
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MARIADB_DATABASE=nextcloud
+      - MARIADB_USER=nextcloud
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD}
+    volumes:
+      - ./db:/var/lib/mysql
+    networks:
+      - nextcloud_internal
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  nextcloud_redis:
+    image: redis:alpine
+    container_name: nextcloud_redis
+    networks:
+      - nextcloud_internal
+    restart: unless-stopped
+
+  collabora:
+    image: collabora/code:latest
+    container_name: collabora
+    environment:
+      - aliasgroup1=https://nextcloud.local.wilfredtuscano.com:443
+      - DONT_GEN_SSL_CERT=YES
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=true
+    ports:
+      - "9980:9980"
+    networks:
+      - nextcloud_internal
+    restart: unless-stopped
+
+networks:
+  nextcloud_internal:

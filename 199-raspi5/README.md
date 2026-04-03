@@ -19,13 +19,14 @@
 
 ## Setup
 
-1. [Set a static IP](../guides/static-ip.md)
-2. [Install Docker](../guides/docker-install.md)
-3. Deploy stacks in order:
+1. [Enable SSH server](../guides/ssh.md)
+2. [Set a static IP](../guides/static-ip.md)
+3. [Install Docker](../guides/docker-install.md)
+4. Deploy stacks in order:
    1. `docker/portainer/` — Portainer
    2. `docker/pihole/` — Pi-hole (set as DNS on router after this step)
    3. `docker/traefik/` — Traefik
-4. [Set up Tailscale subnet router](../guides/tailscale.md)
+5. [Set up Tailscale subnet router](../guides/tailscale.md)
 
 ## Docker Stacks
 

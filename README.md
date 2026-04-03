@@ -38,5 +38,7 @@ See [guides/tailscale.md](guides/tailscale.md) for setup instructions.
 
 - [Install Docker](guides/docker-install.md)
 - [Set a Static IP (Ubuntu / netplan)](guides/static-ip.md)
+- [SSH Setup](guides/ssh.md)
 - [Mount ZFS Drives](guides/zfs-mount.md)
+- [Portainer Edge Agent Setup](guides/portainer-edge-agent.md)
 - [Tailscale Remote Access](guides/tailscale.md)

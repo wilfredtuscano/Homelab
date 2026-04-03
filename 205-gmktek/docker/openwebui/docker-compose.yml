@@ -7,8 +7,5 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - open-webui-data:/app/backend/data
+      - ./data:/app/backend/data
     restart: always
-
-volumes:
-  open-webui-data:
