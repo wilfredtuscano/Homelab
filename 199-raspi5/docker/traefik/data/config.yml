@@ -180,6 +180,24 @@ http:
         - https-redirectscheme
       tls: {}
       service: chat
+    grafana:
+      entryPoints:
+        - "https"
+      rule: "Host(`grafana.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: grafana
+    homepage:
+      entryPoints:
+        - "https"
+      rule: "Host(`homepage.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: homepage
 
   services:
     gateway:
@@ -281,6 +299,16 @@ http:
       loadBalancer:
         servers:
           - url: "http://192.168.1.205:3000/"
+        passHostHeader: true
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.199:3001/"
+        passHostHeader: true
+    homepage:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.199:3002/"
         passHostHeader: true
 
   middlewares:
