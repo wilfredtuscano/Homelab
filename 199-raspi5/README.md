@@ -16,6 +16,8 @@
 - Reverse proxy for all local services (Traefik)
 - Container management (Portainer)
 - Remote access gateway (Tailscale subnet router)
+- Centralized monitoring — logs (Loki), metrics (Prometheus), dashboards (Grafana)
+- Service dashboard (Homepage)
 
 ## Setup
 
@@ -35,3 +37,5 @@
 | [docker/portainer/](docker/portainer/) | Portainer |
 | [docker/pihole/](docker/pihole/) | Pi-hole |
 | [docker/traefik/](docker/traefik/) | Traefik |
+| [docker/monitoring/](docker/monitoring/) | Loki, Prometheus, Grafana |
+| [docker/homepage/](docker/homepage/) | Homepage |
