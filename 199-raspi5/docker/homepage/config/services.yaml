@@ -1,0 +1,104 @@
+- Infrastructure:
+    - Portainer:
+        href: https://portainer.local.wilfredtuscano.com
+        description: Container management
+        icon: portainer.svg
+        ping: https://portainer.local.wilfredtuscano.com
+    - Proxmox:
+        href: https://proxmox.local.wilfredtuscano.com
+        description: Hypervisor
+        icon: proxmox.svg
+        ping: https://proxmox.local.wilfredtuscano.com
+    - TrueNAS:
+        href: https://truenas.local.wilfredtuscano.com
+        description: NAS storage
+        icon: truenas.svg
+        ping: https://truenas.local.wilfredtuscano.com
+    - Pi-hole:
+        href: https://pihole.local.wilfredtuscano.com
+        description: DNS ad blocker
+        icon: pi-hole.svg
+        ping: https://pihole.local.wilfredtuscano.com
+    - Traefik:
+        href: https://traefik-dashboard.local.wilfredtuscano.com
+        description: Reverse proxy
+        icon: traefik.svg
+        ping: https://traefik-dashboard.local.wilfredtuscano.com
+
+- Monitoring:
+    - Grafana:
+        href: https://grafana.local.wilfredtuscano.com
+        description: Metrics, logs & alerts
+        icon: grafana.svg
+        ping: https://grafana.local.wilfredtuscano.com
+
+- Media:
+    - Plex:
+        href: https://plex.local.wilfredtuscano.com
+        description: Media server
+        icon: plex.svg
+        ping: https://plex.local.wilfredtuscano.com
+    - Sonarr:
+        href: https://sonarr.local.wilfredtuscano.com
+        description: TV shows
+        icon: sonarr.svg
+        ping: https://sonarr.local.wilfredtuscano.com
+    - Radarr:
+        href: https://radarr.local.wilfredtuscano.com
+        description: Movies
+        icon: radarr.svg
+        ping: https://radarr.local.wilfredtuscano.com
+    - Lidarr:
+        href: https://lidarr.local.wilfredtuscano.com
+        description: Music
+        icon: lidarr.svg
+        ping: https://lidarr.local.wilfredtuscano.com
+    - Readarr:
+        href: https://readarr.local.wilfredtuscano.com
+        description: Books
+        icon: readarr.svg
+        ping: https://readarr.local.wilfredtuscano.com
+    - Prowlarr:
+        href: https://prowlarr.local.wilfredtuscano.com
+        description: Indexer manager
+        icon: prowlarr.svg
+        ping: https://prowlarr.local.wilfredtuscano.com
+    - qBittorrent:
+        href: https://qbittorrent.local.wilfredtuscano.com
+        description: Download client
+        icon: qbittorrent.svg
+        ping: https://qbittorrent.local.wilfredtuscano.com
+    - MeTube:
+        href: https://metube.local.wilfredtuscano.com
+        description: YouTube downloader
+        icon: metube.svg
+        ping: https://metube.local.wilfredtuscano.com
+
+- Cloud:
+    - Nextcloud:
+        href: https://nextcloud.local.wilfredtuscano.com
+        description: Files & photos
+        icon: nextcloud.svg
+        ping: https://nextcloud.local.wilfredtuscano.com
+    - Vaultwarden:
+        href: https://vaultwarden.local.wilfredtuscano.com
+        description: Password manager
+        icon: vaultwarden.svg
+        ping: https://vaultwarden.local.wilfredtuscano.com
+    - Collabora:
+        href: https://collabora.local.wilfredtuscano.com
+        description: Office suite
+        icon: mdi-file-document-edit
+        ping: https://collabora.local.wilfredtuscano.com
+
+- AI:
+    - Open WebUI:
+        href: https://chat.local.wilfredtuscano.com
+        description: AI chat interface
+        icon: open-webui.svg
+        ping: https://chat.local.wilfredtuscano.com
+    - Ollama:
+        href: https://ollama.local.wilfredtuscano.com
+        description: Local LLM server
+        icon: ollama.svg
+        ping: https://ollama.local.wilfredtuscano.com
