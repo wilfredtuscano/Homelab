@@ -40,14 +40,28 @@ The web UI. Connects to both Loki (logs) and Prometheus (metrics) and provides:
 2. Open Grafana at `https://grafana.local.wilfredtuscano.com`
    - Default credentials: `admin` / `admin` (change on first login)
 
-3. Import community dashboards (Dashboards → Import → enter ID):
+3. Fix bind mount permissions before starting (Grafana runs as UID 472, Loki as 10001, Prometheus as 65534):
+   ```bash
+   mkdir -p grafana/data loki/data prometheus/data
+   sudo chown -R 472:472 grafana/data
+   sudo chown -R 10001:10001 loki/data
+   sudo chown -R 65534:65534 prometheus/data
+   ```
+
+4. Import community dashboards (Dashboards → Import → enter ID):
    | Dashboard | ID |
    |-----------|-----|
    | Node Exporter Full (system metrics) | `1860` |
    | cAdvisor (container metrics) | `14282` |
-   | Loki log dashboard | `13639` |
 
-4. Set up Discord alerting: Alerting → Contact points → Add Discord webhook
+   For each imported dashboard, go to Settings → Variables and add any missing datasource variables:
+   - Name: `DS_PROMETHEUS`, Type: `Data source`, Data source type: `Prometheus`
+
+   For logs, use **Explore** (compass icon) with Loki datasource and LogQL queries:
+   - All logs from a host: `{host="starr"}`
+   - Specific container: `{container="sonarr"}`
+
+5. Set up Discord alerting: Alerting → Contact points → Add Discord webhook
 
 ## Storage
 
