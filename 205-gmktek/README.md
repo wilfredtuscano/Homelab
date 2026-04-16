@@ -9,7 +9,7 @@
 |---|---|
 | Device | GMKTec Evo-X2 |
 | SoC | AMD Strix Halo |
-| RAM | 128 GB |
+| RAM | 128 GB (64 GB UMA allocated to GPU) |
 
 ## Role
 
