@@ -90,6 +90,24 @@ services:
       - 8787:8787
     restart: unless-stopped
 
+  lazylibrarian:
+    image: lscr.io/linuxserver/lazylibrarian
+    container_name: lazylibrarian
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=US/Pacific
+      - DOCKER_MODS=linuxserver/mods:lazylibrarian-ffmpeg
+    volumes:
+      - ./lazylibrarian/config:/config
+      - /mnt/nfs/media/Books:/books
+      - /mnt/nfs/media/Audiobooks:/audiobooks
+      - /mnt/nfs/downloads:/downloads
+    ports:
+      # LazyLibrarian port
+      - 5299:5299
+    restart: unless-stopped
+
   metube:
     image: ghcr.io/alexta69/metube
     container_name: metube

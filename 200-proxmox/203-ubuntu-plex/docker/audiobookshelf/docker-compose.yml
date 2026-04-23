@@ -1,0 +1,15 @@
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf
+    container_name: audiobookshelf
+    environment:
+      - TZ=US/Pacific
+    volumes:
+      - ./config:/config
+      - ./metadata:/metadata
+      - /mnt/nfs/media/Audiobooks:/audiobooks
+      - /mnt/nfs/media/Books:/books
+    ports:
+      # Audiobookshelf web UI and API port
+      - 13378:80
+    restart: unless-stopped
