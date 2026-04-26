@@ -144,6 +144,15 @@ http:
         - https-redirectscheme
       tls: {}
       service: metube
+    mealie:
+      entryPoints:
+        - "https"
+      rule: "Host(`mealie.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: mealie
     plex:
       entryPoints:
         - "https"
@@ -297,6 +306,11 @@ http:
       loadBalancer:
         servers:
           - url: "http://192.168.1.202:8081/"
+        passHostHeader: true
+    mealie:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.204:9000/"
         passHostHeader: true
     plex:
       loadBalancer:

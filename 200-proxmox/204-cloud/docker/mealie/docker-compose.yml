@@ -1,0 +1,16 @@
+services:
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie
+    container_name: mealie
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Los_Angeles
+      - ALLOW_SIGNUP=false
+      - BASE_URL=https://mealie.local.wilfredtuscano.com
+    volumes:
+      - ./data:/app/data
+    ports:
+      # Mealie web UI
+      - 9000:9000
+    restart: unless-stopped
