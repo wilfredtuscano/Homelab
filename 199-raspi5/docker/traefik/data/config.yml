@@ -117,15 +117,6 @@ http:
         - https-redirectscheme
       tls: {}
       service: readarr
-    lazylibrarian:
-      entryPoints:
-        - "https"
-      rule: "Host(`lazylibrarian.local.wilfredtuscano.com`)"
-      middlewares:
-        - default-headers
-        - https-redirectscheme
-      tls: {}
-      service: lazylibrarian
     audiobookshelf:
       entryPoints:
         - "https"
@@ -135,6 +126,15 @@ http:
         - https-redirectscheme
       tls: {}
       service: audiobookshelf
+    calibre-web:
+      entryPoints:
+        - "https"
+      rule: "Host(`calibre-web.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: calibre-web
     metube:
       entryPoints:
         - "https"
@@ -292,15 +292,15 @@ http:
         servers:
           - url: "http://192.168.1.202:8787/"
         passHostHeader: true
-    lazylibrarian:
-      loadBalancer:
-        servers:
-          - url: "http://192.168.1.202:5299/"
-        passHostHeader: true
     audiobookshelf:
       loadBalancer:
         servers:
           - url: "http://192.168.1.203:13378/"
+        passHostHeader: true
+    calibre-web:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.203:8083/"
         passHostHeader: true
     metube:
       loadBalancer:
