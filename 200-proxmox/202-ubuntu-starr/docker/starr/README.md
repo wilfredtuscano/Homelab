@@ -10,8 +10,7 @@ Media automation stack. Monitors RSS feeds, searches indexers, and sends grabs t
 | Radarr | Movie automation | 7878 |
 | Sonarr | TV series automation | 8989 |
 | Lidarr | Music automation | 8686 |
-| Readarr | Book automation (to be replaced by LazyLibrarian once validated) | 8787 |
-| LazyLibrarian | Book and audiobook automation — replaces Readarr | 5299 |
+| Readarr | Book automation | 8787 |
 | FlareSolverr | Cloudflare bypass proxy (used by Prowlarr) | 8191 |
 | Metube | YouTube/web video downloader | 8081 |
 
@@ -33,6 +32,3 @@ Media automation stack. Monitors RSS feeds, searches indexers, and sends grabs t
 - Connect Prowlarr to each \*arr app under Settings → Apps, then sync indexers
 - Connect each \*arr app to qBittorrent (vpn stack) at `http://192.168.1.202:8090`
 - Metube downloads to `/mnt/nfs/downloads/metube`
-- LazyLibrarian: connect qBittorrent at `http://192.168.1.202:8090`, set download dir to `/downloads`, books to `/books`, audiobooks to `/audiobooks`
-- LazyLibrarian uses `DOCKER_MODS=linuxserver/mods:lazylibrarian-ffmpeg` for audiobook processing
-- Once LazyLibrarian is validated, remove the Readarr service
