@@ -1,0 +1,22 @@
+services:
+  plex:
+    image: lscr.io/linuxserver/plex
+    container_name: plex
+    security_opt:
+      - apparmor=unconfined
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=US/Pacific
+      - VERSION=docker
+    volumes:
+      - ./config:/config
+      - /mnt/nfs/media/plex-data/Media:/config/Library/Application Support/Plex Media Server/Media
+      - /mnt/nfs/media/plex-data/Cache:/config/Library/Application Support/Plex Media Server/Cache
+      - /mnt/nfs/media/Movies:/movies
+      - /mnt/nfs/media/Series:/series
+      - /mnt/nfs/media/Music:/music
+    restart: unless-stopped
+    network_mode: host
