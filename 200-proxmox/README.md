@@ -22,12 +22,13 @@ Hypervisor hosting all VMs. HBA controller is passed through to TrueNAS VM via I
 
 ## VMs
 
-| VM | IP | Role | Folder |
+| VM / LXC | IP | Role | Folder |
 |---|---|---|---|
 | TrueNAS Core 13 | 192.168.1.201 | NAS / ZFS storage | [201-truenas/](201-truenas/) |
 | Ubuntu - Starr | 192.168.1.202 | *arr apps + VPN downloader | [202-ubuntu-starr/](202-ubuntu-starr/) |
-| Ubuntu - Plex | 192.168.1.203 | Plex media server | [203-ubuntu-plex/](203-ubuntu-plex/) |
-| Ubuntu - Cloud | 192.168.1.204 | VaultWarden, Nextcloud (planned) | [204-cloud/](204-cloud/) |
+| Ubuntu - Plex *(decommissioning)* | 192.168.1.203 | Plex media server — being replaced by LXC 213 | [203-ubuntu-plex/](203-ubuntu-plex/) |
+| Ubuntu - Cloud | 192.168.1.204 | VaultWarden, Nextcloud | [204-cloud/](204-cloud/) |
+| LXC - Plex | 192.168.1.213 → 203 | Plex + iGPU QuickSync, Audiobookshelf, Calibre-web | [213-lxc-plex/](213-lxc-plex/) |
 
 ## IOMMU Setup (PCI Passthrough for HBA)
 

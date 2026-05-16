@@ -1,0 +1,16 @@
+services:
+  calibre-web:
+    image: lscr.io/linuxserver/calibre-web
+    container_name: calibre-web
+    security_opt:
+      - apparmor=unconfined
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=US/Pacific
+    volumes:
+      - ./config:/config
+      - /mnt/nfs/media/Books:/books
+    ports:
+      - 8083:8083
+    restart: unless-stopped
