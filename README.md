@@ -42,3 +42,5 @@ See [guides/tailscale.md](guides/tailscale.md) for setup instructions.
 - [Mount ZFS Drives](guides/zfs-mount.md)
 - [Portainer Edge Agent Setup](guides/portainer-edge-agent.md)
 - [Tailscale Remote Access](guides/tailscale.md)
+- [Docker in a Proxmox LXC Container](guides/lxc-docker.md)
+- [Add an NVMe ZFS Pool to Proxmox](guides/zfs-nvme-pool.md)
