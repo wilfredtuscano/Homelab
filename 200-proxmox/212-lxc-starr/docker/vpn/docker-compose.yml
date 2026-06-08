@@ -2,6 +2,8 @@ services:
   gluetun:
     image: qmcgaw/gluetun
     container_name: gluetun
+    security_opt:
+      - apparmor=unconfined
     cap_add:
       - NET_ADMIN
     devices:
@@ -28,6 +30,8 @@ services:
   qbittorrent:
     image: linuxserver/qbittorrent
     container_name: qbittorrent
+    security_opt:
+      - apparmor=unconfined
     environment:
       - PUID=1000
       - PGID=1000
@@ -46,6 +50,8 @@ services:
   firefox:
     image: lscr.io/linuxserver/firefox:latest
     container_name: firefox
+    security_opt:
+      - apparmor=unconfined
     environment:
       - PUID=1000
       - PGID=1000

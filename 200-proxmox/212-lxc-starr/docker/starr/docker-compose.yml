@@ -2,6 +2,8 @@ services:
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr
     container_name: flaresolverr
+    security_opt:
+      - apparmor=unconfined
     environment:
       - TZ=US/Pacific
     ports:
@@ -11,6 +13,8 @@ services:
   prowlarr:
     image: lscr.io/linuxserver/prowlarr
     container_name: prowlarr
+    security_opt:
+      - apparmor=unconfined
     environment:
       - PUID=1000
       - PGID=1000
@@ -25,6 +29,8 @@ services:
   radarr:
     image: lscr.io/linuxserver/radarr
     container_name: radarr
+    security_opt:
+      - apparmor=unconfined
     environment:
       - PUID=1000
       - PGID=1000
@@ -42,6 +48,8 @@ services:
   sonarr:
     image: lscr.io/linuxserver/sonarr
     container_name: sonarr
+    security_opt:
+      - apparmor=unconfined
     environment:
       - PUID=1000
       - PGID=1000
@@ -59,6 +67,8 @@ services:
   lidarr:
     image: lscr.io/linuxserver/lidarr
     container_name: lidarr
+    security_opt:
+      - apparmor=unconfined
     environment:
       - PUID=1000
       - PGID=1000
@@ -76,6 +86,8 @@ services:
   readarr:
     image: lscr.io/linuxserver/readarr:0.4.18-develop
     container_name: readarr
+    security_opt:
+      - apparmor=unconfined
     environment:
       - PUID=1000
       - PGID=1000
@@ -93,6 +105,8 @@ services:
   metube:
     image: ghcr.io/alexta69/metube
     container_name: metube
+    security_opt:
+      - apparmor=unconfined
     environment:
       - PUID=1000
       - PGID=1000

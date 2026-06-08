@@ -13,22 +13,32 @@
 | CPU Cooler | Noctua Dual Tower (LGA 1700) |
 | RAM | TEAMGROUP T-Force Vulcan DDR5 64 GB (2×32 GB) 5200 MHz CL40 |
 | PSU | Corsair SF750 SFX 750W 80+ Platinum |
+| Boot/system | 2× WD Blue SA510 500 GB SATA SSD (ZFS mirror — `rpool`) |
+| LXC/VM fast pool | 1× Samsung PM9A1 1 TB PCIe 4.0 NVMe (ZFS single — `local-nvme`) |
 | Storage (NAS) | 8× Seagate IronWolf 8 TB NAS HDD (3.5" SATA 6 Gb/s, 7200 RPM, 256 MB cache) |
 | HBA | LSI 9211-8i (IT mode, FW P20) + 2× SFF-8087 breakout cables |
 
 ## Role
 
-Hypervisor hosting all VMs. HBA controller is passed through to TrueNAS VM via IOMMU for direct disk access.
+Hypervisor hosting all VMs and LXCs. HBA controller is passed through to TrueNAS VM via IOMMU for direct disk access.
 
-## VMs
+## Storage pools
+
+| Pool | Type | Devices | Used for |
+|---|---|---|---|
+| `rpool` | ZFS mirror | 2× 500 GB SATA SSD | Proxmox boot/system, legacy VM disks |
+| `local-nvme` | ZFS single | 1× 1 TB NVMe (PM9A1) | LXC rootfs (low-latency, fast SQLite + Docker overlays) |
+
+> NVMe is dedicated to Proxmox as a host pool, not handed to TrueNAS. LXC rootfs lives here for low-latency local IO; bulk media stays on TrueNAS over NFS.
+
+## VMs / LXCs
 
 | VM / LXC | IP | Role | Folder |
 |---|---|---|---|
-| TrueNAS Core 13 | 192.168.1.201 | NAS / ZFS storage | [201-truenas/](201-truenas/) |
-| Ubuntu - Starr | 192.168.1.202 | *arr apps + VPN downloader | [202-ubuntu-starr/](202-ubuntu-starr/) |
-| Ubuntu - Plex *(decommissioning)* | 192.168.1.203 | Plex media server — being replaced by LXC 213 | [203-ubuntu-plex/](203-ubuntu-plex/) |
-| Ubuntu - Cloud | 192.168.1.204 | VaultWarden, Nextcloud | [204-cloud/](204-cloud/) |
-| LXC - Plex | 192.168.1.213 → 203 | Plex + iGPU QuickSync, Audiobookshelf, Calibre-web | [213-lxc-plex/](213-lxc-plex/) |
+| TrueNAS Core 13 (VM) | 192.168.1.201 | NAS / ZFS storage | [201-truenas/](201-truenas/) |
+| Ubuntu - Cloud (VM) | 192.168.1.204 | VaultWarden, Nextcloud | [204-cloud/](204-cloud/) |
+| LXC - Starr | 192.168.1.202 | *arr apps + VPN downloader (Gluetun + qBittorrent) | [212-lxc-starr/](212-lxc-starr/) |
+| LXC - Plex | 192.168.1.203 | Plex + iGPU QuickSync, Audiobookshelf, Calibre-web | [213-lxc-plex/](213-lxc-plex/) |
 
 ## IOMMU Setup (PCI Passthrough for HBA)
 

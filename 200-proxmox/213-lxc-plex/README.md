@@ -1,6 +1,6 @@
 # 213 — LXC: Plex (Container)
 
-**IP:** 192.168.1.213 (temporary — will be reassigned to 192.168.1.203 after VM decommission)
+**IP:** 192.168.1.203 (took over from VM 203 after migration)
 **OS:** Ubuntu 22.04 LTS
 **Host:** Proxmox (192.168.1.200)
 **Type:** Privileged LXC container
