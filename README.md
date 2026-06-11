@@ -12,7 +12,7 @@ ISP Modem
     │   ├── VM:  TrueNAS Core 13   192.168.1.201   → NAS / ZFS Storage
     │   ├── LXC: Starr             192.168.1.202   → *arr apps + VPN downloader
     │   ├── LXC: Plex              192.168.1.203   → Plex (iGPU QuickSync) + Audiobookshelf + Calibre-web
-    │   └── VM:  Ubuntu - Cloud    192.168.1.204   → VaultWarden, Nextcloud
+    │   └── LXC: Cloud             192.168.1.204   → VaultWarden + Mealie + Nextcloud (MariaDB + Redis + Collabora)
     └── GMKTec Evo-X2       192.168.1.205   → Local AI (Ollama + OpenWebUI)
 ```
 
@@ -25,7 +25,7 @@ ISP Modem
 | TrueNAS Core 13 (VM) | 192.168.1.201 | NAS / ZFS | [200-proxmox/201-truenas/](200-proxmox/201-truenas/) |
 | LXC - Starr | 192.168.1.202 | *arr + VPN | [200-proxmox/212-lxc-starr/](200-proxmox/212-lxc-starr/) |
 | LXC - Plex | 192.168.1.203 | Plex + Audiobookshelf + Calibre-web | [200-proxmox/213-lxc-plex/](200-proxmox/213-lxc-plex/) |
-| Ubuntu - Cloud (VM) | 192.168.1.204 | VaultWarden, Nextcloud | [200-proxmox/204-cloud/](200-proxmox/204-cloud/) |
+| LXC - Cloud | 192.168.1.204 | VaultWarden + Mealie + Nextcloud | [200-proxmox/214-lxc-cloud/](200-proxmox/214-lxc-cloud/) |
 | GMKTec Evo-X2 | 192.168.1.205 | Ollama / OpenWebUI | [205-gmktek/](205-gmktek/) |
 
 ## Remote Access

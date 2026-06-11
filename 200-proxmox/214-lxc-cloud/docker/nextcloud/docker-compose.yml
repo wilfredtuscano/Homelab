@@ -1,7 +1,10 @@
 services:
   nextcloud:
-    image: lscr.io/linuxserver/nextcloud:latest
+    # Pinned intentionally — bump deliberately, see README "Upgrading Nextcloud".
+    image: lscr.io/linuxserver/nextcloud:33.0.5
     container_name: nextcloud
+    security_opt:
+      - apparmor=unconfined
     environment:
       - PUID=1000
       - PGID=1000
@@ -23,6 +26,8 @@ services:
   nextcloud_db:
     image: mariadb:11
     container_name: nextcloud_db
+    security_opt:
+      - apparmor=unconfined
     environment:
       - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
       - MARIADB_DATABASE=nextcloud
@@ -42,6 +47,8 @@ services:
   nextcloud_redis:
     image: redis:alpine
     container_name: nextcloud_redis
+    security_opt:
+      - apparmor=unconfined
     networks:
       - nextcloud_internal
     restart: unless-stopped
@@ -49,6 +56,8 @@ services:
   collabora:
     image: collabora/code:latest
     container_name: collabora
+    security_opt:
+      - apparmor=unconfined
     environment:
       - aliasgroup1=https://nextcloud.local.wilfredtuscano.com:443
       - DONT_GEN_SSL_CERT=YES

@@ -2,6 +2,8 @@ services:
   mealie:
     image: ghcr.io/mealie-recipes/mealie
     container_name: mealie
+    security_opt:
+      - apparmor=unconfined
     environment:
       - PUID=1000
       - PGID=1000
