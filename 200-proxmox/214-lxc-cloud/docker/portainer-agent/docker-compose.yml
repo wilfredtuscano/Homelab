@@ -2,6 +2,8 @@ services:
   portainer_agent:
     image: portainer/agent:latest
     container_name: portainer_agent
+    security_opt:
+      - apparmor=unconfined
     restart: unless-stopped
     environment:
       - EDGE=1
