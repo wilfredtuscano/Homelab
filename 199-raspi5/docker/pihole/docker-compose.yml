@@ -1,4 +1,12 @@
 services:
+  unbound:
+    container_name: unbound
+    image: mvance/unbound-rpi:latest
+    networks:
+      pihole_net:
+        ipv4_address: 10.55.0.2
+    restart: unless-stopped
+
   pihole:
     container_name: pihole
     image: pihole/pihole
@@ -6,12 +14,22 @@ services:
       - "53:53/tcp"
       - "53:53/udp"
       - "8080:80/tcp"
-    dns:
-      - 8.8.8.8
     environment:
       - TZ=US/Pacific
+      - PIHOLE_DNS_=10.55.0.2#53
     volumes:
       - "./etc-pihole:/etc/pihole"
     cap_add:
       - NET_ADMIN
+    depends_on:
+      - unbound
+    networks:
+      pihole_net:
+        ipv4_address: 10.55.0.3
     restart: unless-stopped
+
+networks:
+  pihole_net:
+    ipam:
+      config:
+        - subnet: 10.55.0.0/24
