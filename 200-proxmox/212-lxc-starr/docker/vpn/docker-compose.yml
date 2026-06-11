@@ -17,10 +17,6 @@ services:
       - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
       - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
     ports:
-      # Firefox HTTP
-      - 3000:3000
-      # Firefox HTTPS
-      - 3001:3001
       # QBT UI Port
       - 8090:8090
       # Bittorrent port
@@ -41,23 +37,6 @@ services:
     volumes:
       - ./qbittorrent/config:/config
       - /mnt/nfs/downloads:/downloads
-    restart: unless-stopped
-    network_mode: service:gluetun
-    depends_on:
-      gluetun:
-        condition: service_healthy
-
-  firefox:
-    image: lscr.io/linuxserver/firefox:latest
-    container_name: firefox
-    security_opt:
-      - apparmor=unconfined
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=US/Pacific
-    volumes:
-      - ./firefox/config:/config
     restart: unless-stopped
     network_mode: service:gluetun
     depends_on:
