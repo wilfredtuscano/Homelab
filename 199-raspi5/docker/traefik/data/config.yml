@@ -189,6 +189,15 @@ http:
         - https-redirectscheme
       tls: {}
       service: collabora
+    immich:
+      entryPoints:
+        - "https"
+      rule: "Host(`immich.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: immich
     ollama:
       entryPoints:
         - "https"
@@ -331,6 +340,11 @@ http:
       loadBalancer:
         servers:
           - url: "http://192.168.1.204:9980/"
+        passHostHeader: true
+    immich:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.204:2283/"
         passHostHeader: true
     ollama:
       loadBalancer:

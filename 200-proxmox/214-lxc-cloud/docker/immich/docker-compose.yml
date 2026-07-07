@@ -1,0 +1,80 @@
+services:
+  immich-server:
+    # Pinned to `release` — bump deliberately, see README "Upgrading Immich".
+    image: ghcr.io/immich-app/immich-server:release
+    container_name: immich-server
+    # Force UID/GID 1000:1000 so writes to the NFS-backed UPLOAD_LOCATION land
+    # as wtuscano:Admin on TrueNAS (both are UID/GID 1000). Immich's default
+    # container user is not 1000 and hits EACCES otherwise.
+    user: "1000:1000"
+    security_opt:
+      - apparmor=unconfined
+    environment:
+      - UPLOAD_LOCATION=/mnt/nfs/immich
+      - DB_HOSTNAME=immich_db
+      - DB_USERNAME=immich
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE_NAME=immich
+      - REDIS_HOSTNAME=immich_redis
+      - TZ=America/Los_Angeles
+    volumes:
+      - /mnt/nfs/immich:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "2283:2283"
+    networks:
+      - immich_internal
+    depends_on:
+      immich_db:
+        condition: service_healthy
+      immich_redis:
+        condition: service_started
+    restart: unless-stopped
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:release
+    container_name: immich-machine-learning
+    security_opt:
+      - apparmor=unconfined
+    environment:
+      - TZ=America/Los_Angeles
+    volumes:
+      - ./ml-cache:/cache
+    networks:
+      - immich_internal
+    restart: unless-stopped
+
+  immich_redis:
+    image: redis:alpine
+    container_name: immich_redis
+    security_opt:
+      - apparmor=unconfined
+    networks:
+      - immich_internal
+    restart: unless-stopped
+
+  immich_db:
+    # Immich-published Postgres 14 with the vectorchord extension baked in.
+    # Verify tag against Immich's current release compose before bumping.
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0
+    container_name: immich_db
+    security_opt:
+      - apparmor=unconfined
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=immich
+      - POSTGRES_DB=immich
+      - POSTGRES_INITDB_ARGS=--data-checksums
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    networks:
+      - immich_internal
+    healthcheck:
+      test: pg_isready --dbname=immich
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  immich_internal:
