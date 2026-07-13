@@ -6,6 +6,13 @@
 data/
 volumes/
 
+# docker bind-mount runtime dirs (created on the host at deploy time)
+db/
+redis/
+ml-cache/
+paperless-ai/
+paperless-gpt/
+
 # traefik config override (data/ is globally ignored, but traefik uses it for config files)
 # TODO: rename traefik config folder away from data/ to avoid this override
 !199-raspi5/docker/traefik/data/

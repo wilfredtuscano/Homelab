@@ -1,0 +1,165 @@
+services:
+  # --- Core Paperless-ngx (always on) -------------------------------------
+  webserver:
+    # Movable tag on first deploy; pin to a version after first boot.
+    # See README "Upgrading Paperless".
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless-webserver
+    security_opt:
+      - apparmor=unconfined
+    depends_on:
+      db:
+        condition: service_healthy
+      broker:
+        condition: service_started
+      gotenberg:
+        condition: service_started
+      tika:
+        condition: service_started
+    environment:
+      # Run as wtuscano:Admin (UID/GID 1000) so writes to the NFS-backed
+      # media/consume dirs land correctly on TrueNAS. Same rule as Immich.
+      USERMAP_UID: 1000
+      USERMAP_GID: 1000
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS: ${POSTGRES_PASSWORD}
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
+      # Office/email -> PDF conversion + text extraction
+      PAPERLESS_TIKA_ENABLED: 1
+      PAPERLESS_TIKA_ENDPOINT: http://tika:9998
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
+      # inotify does not fire reliably over NFS -> poll the consume dir
+      PAPERLESS_CONSUMER_POLLING: 30
+      PAPERLESS_CONSUMER_RECURSIVE: 1
+      PAPERLESS_OCR_LANGUAGE: eng
+      PAPERLESS_TIME_ZONE: America/Los_Angeles
+      # Reachable URL for CSRF / correct link generation behind Traefik
+      PAPERLESS_URL: https://paperless.local.wilfredtuscano.com
+      # Organize archived docs on disk: <type>/<year>/<title>
+      PAPERLESS_FILENAME_FORMAT: "{document_type}/{created_year}/{title}"
+      # Bootstrap superuser on first boot (change/rotate after)
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}
+    volumes:
+      - /mnt/nfs/paperless/media:/usr/src/paperless/media       # NAS: the archive
+      - /mnt/nfs/paperless/consume:/usr/src/paperless/consume    # NAS: drop zone
+      - ./data:/usr/src/paperless/data                           # LOCAL: search index + classifier model
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "8000:8000"
+    networks:
+      - paperless
+    restart: unless-stopped
+
+  db:
+    image: docker.io/library/postgres:16
+    container_name: paperless-db
+    security_opt:
+      - apparmor=unconfined
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./db:/var/lib/postgresql/data   # LOCAL only — NFS + Postgres corrupts (same rule as Immich)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperless"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - paperless
+    restart: unless-stopped
+
+  broker:
+    image: docker.io/library/redis:7
+    container_name: paperless-broker
+    security_opt:
+      - apparmor=unconfined
+    volumes:
+      - ./redis:/data
+    networks:
+      - paperless
+    restart: unless-stopped
+
+  gotenberg:
+    image: docker.io/gotenberg/gotenberg:8
+    container_name: paperless-gotenberg
+    security_opt:
+      - apparmor=unconfined
+    # Paperless controls the conversion; disable Gotenberg's own routes it doesn't need
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+    networks:
+      - paperless
+    restart: unless-stopped
+
+  tika:
+    image: docker.io/apache/tika:latest
+    container_name: paperless-tika
+    security_opt:
+      - apparmor=unconfined
+    networks:
+      - paperless
+    restart: unless-stopped
+
+  # --- AI add-ons (profile "ai") ------------------------------------------
+  # Start only after Paperless is up and a superuser API token exists:
+  #   docker compose --profile ai up -d
+  # Both point their LLM calls at the Strix Halo box (jarvis) via Traefik,
+  # NOT a local Ollama — cloud-ct has no GPU. See README.
+  paperless-ai:
+    image: clusterzx/paperless-ai:latest
+    container_name: paperless-ai
+    profiles: ["ai"]
+    security_opt:
+      - apparmor=unconfined
+    depends_on:
+      - webserver
+    environment:
+      # Most config (API token, Ollama URL/model) is set in the web UI at :3000
+      # and persisted to the data volume below. Kept minimal here on purpose.
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - ./paperless-ai:/app/data   # LOCAL: its own config + sqlite
+    ports:
+      - "3000:3000"
+    networks:
+      - paperless
+    restart: unless-stopped
+
+  paperless-gpt:
+    image: icereed/paperless-gpt:latest
+    container_name: paperless-gpt
+    profiles: ["ai"]
+    security_opt:
+      - apparmor=unconfined
+    depends_on:
+      - webserver
+    environment:
+      PAPERLESS_BASE_URL: http://webserver:8000
+      PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN}
+      # Text metadata (title/tags/correspondent) via Ollama on jarvis
+      LLM_PROVIDER: ollama
+      LLM_MODEL: ${GPT_TEXT_MODEL}
+      LLM_LANGUAGE: English
+      OLLAMA_HOST: https://ollama.local.wilfredtuscano.com
+      # Vision OCR path — the value-add over Tesseract for scans/handwriting
+      VISION_LLM_PROVIDER: ollama
+      VISION_LLM_MODEL: ${GPT_VISION_MODEL}
+    volumes:
+      - ./paperless-gpt:/app/db      # LOCAL: dedupe/state
+    ports:
+      - "8080:8080"
+    networks:
+      - paperless
+    restart: unless-stopped
+
+networks:
+  paperless:
