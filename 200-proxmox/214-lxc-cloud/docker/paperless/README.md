@@ -37,14 +37,14 @@ cloud-ct has no GPU. See [`../../../205-gmktek/docker/ollama/`](../../../../205-
    <truenas-ip>:/mnt/Vault/Paperless  /mnt/nfs/paperless  nfs  defaults,_netdev  0  0
    ```
 
-   Then `sudo mkdir -p /mnt/nfs/paperless/{documents,inbox} && sudo mount -a`.
+   Then `sudo mkdir -p /mnt/nfs/paperless/{media,inbox} && sudo mount -a`.
 3. **Pi-hole DNS** record `paperless.local.wilfredtuscano.com` → `192.168.1.199` (Traefik). *(Done.)*
 
 ## Storage layout
 
 | Container path | Host path | Purpose |
 |----------------|-----------|---------|
-| `/usr/src/paperless/media` | `/mnt/nfs/paperless/documents` (NFS) | The document archive — originals + archived PDFs |
+| `/usr/src/paperless/media` | `/mnt/nfs/paperless/media` (NFS) | The document archive — Paperless nests `documents/{originals,archive,thumbnails}` here |
 | `/usr/src/paperless/consume` | `/mnt/nfs/paperless/inbox` (NFS) | Drop zone — files dropped here get ingested |
 | `/usr/src/paperless/data` | `./data` (local) | Search index + trained classifier model — regenerable |
 | `/var/lib/postgresql/data` | `./db` (local) | Postgres — **must be local**, NFS+Postgres corrupts |
