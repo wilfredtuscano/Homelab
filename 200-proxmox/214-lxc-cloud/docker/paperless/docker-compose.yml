@@ -38,8 +38,8 @@ services:
       PAPERLESS_TIME_ZONE: America/Los_Angeles
       # Reachable URL for CSRF / correct link generation behind Traefik
       PAPERLESS_URL: https://paperless.local.wilfredtuscano.com
-      # Organize archived docs on disk: <type>/<year>/<title>
-      PAPERLESS_FILENAME_FORMAT: "{document_type}/{created_year}/{title}"
+      # Organize archived docs on disk: <type>/<year>/<title> (Jinja2 syntax)
+      PAPERLESS_FILENAME_FORMAT: "{{ document_type }}/{{ created_year }}/{{ title }}"
       # Bootstrap superuser on first boot (change/rotate after)
       PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER}
       PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}
