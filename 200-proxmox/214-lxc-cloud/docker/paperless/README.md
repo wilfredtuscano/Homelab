@@ -37,15 +37,15 @@ cloud-ct has no GPU. See [`../../../205-gmktek/docker/ollama/`](../../../../205-
    <truenas-ip>:/mnt/Vault/Paperless  /mnt/nfs/paperless  nfs  defaults,_netdev  0  0
    ```
 
-   Then `sudo mkdir -p /mnt/nfs/paperless/{media,consume} && sudo mount -a`.
+   Then `sudo mkdir -p /mnt/nfs/paperless/{documents,inbox} && sudo mount -a`.
 3. **Pi-hole DNS** record `paperless.local.wilfredtuscano.com` → `192.168.1.199` (Traefik). *(Done.)*
 
 ## Storage layout
 
 | Container path | Host path | Purpose |
 |----------------|-----------|---------|
-| `/usr/src/paperless/media` | `/mnt/nfs/paperless/media` (NFS) | The document archive — originals + archived PDFs |
-| `/usr/src/paperless/consume` | `/mnt/nfs/paperless/consume` (NFS) | Drop zone — files dropped here get ingested |
+| `/usr/src/paperless/media` | `/mnt/nfs/paperless/documents` (NFS) | The document archive — originals + archived PDFs |
+| `/usr/src/paperless/consume` | `/mnt/nfs/paperless/inbox` (NFS) | Drop zone — files dropped here get ingested |
 | `/usr/src/paperless/data` | `./data` (local) | Search index + trained classifier model — regenerable |
 | `/var/lib/postgresql/data` | `./db` (local) | Postgres — **must be local**, NFS+Postgres corrupts |
 | redis | `./redis` (local) | Task queue state |
@@ -115,7 +115,7 @@ Only after the core stack is up and healthy:
 
 ## Ingestion methods
 
-- **Consume folder** — drop into `/mnt/nfs/paperless/consume` from any host that mounts
+- **Consume folder** — drop into `/mnt/nfs/paperless/inbox` from any host that mounts
   the NAS (or via a Nextcloud/Syncthing target pointed there).
 - **Web upload** — drag onto the Paperless UI.
 - **Mobile** — the Paperless share-target apps (e.g. Paperless Mobile) → share a phone

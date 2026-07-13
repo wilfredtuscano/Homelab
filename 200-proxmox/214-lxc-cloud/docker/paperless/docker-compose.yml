@@ -44,8 +44,8 @@ services:
       PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER}
       PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}
     volumes:
-      - /mnt/nfs/paperless/media:/usr/src/paperless/media       # NAS: the archive
-      - /mnt/nfs/paperless/consume:/usr/src/paperless/consume    # NAS: drop zone
+      - /mnt/nfs/paperless/documents:/usr/src/paperless/media       # NAS: the archive
+      - /mnt/nfs/paperless/inbox:/usr/src/paperless/consume         # NAS: drop zone (intake)
       - ./data:/usr/src/paperless/data                           # LOCAL: search index + classifier model
       - /etc/localtime:/etc/localtime:ro
     ports:
