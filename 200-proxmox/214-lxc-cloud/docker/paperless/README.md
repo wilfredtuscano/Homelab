@@ -83,31 +83,70 @@ boundary is what the future RAG layer keys off for household isolation.
 
 ## AI add-ons (profile `ai`)
 
-Only after the core stack is up and healthy:
+Only after the core stack is up and healthy.
 
-1. **Pull the models on jarvis** (vision model does image-based OCR):
+### 0. Cap the context on jarvis's Ollama (one-time, **required**)
 
-   ```bash
-   ssh jarvis 'ollama pull qwen2.5vl:32b'
-   ```
+Large vision models default to a 128k context; with flash attention off that
+inflates the attention compute graph past jarvis's VRAM, and the load fails with
+`model requires more system memory (41.0 GiB) than is available`. jarvis carves
+96 GB into VRAM leaving only ~30 GB system RAM, so there's no headroom to spill
+into. Set a sane default on the Ollama box once (needs sudo; jarvis has no
+passwordless sudo, so use `ssh -t`):
 
-   Ollama auto-unloads idle models after ~5 min, so a large vision model only
-   occupies VRAM during an ingest and frees it afterward.
+```bash
+ssh -t jarvis "sudo bash -c 'cat > /etc/systemd/system/ollama.service.d/override.conf <<EOF
+[Service]
+Environment=\"OLLAMA_FLASH_ATTENTION=1\"
+Environment=\"OLLAMA_CONTEXT_LENGTH=32768\"
+EOF
+systemctl daemon-reload && systemctl restart ollama'"
+```
 
-2. **Create an API token**: Paperless UI → your user → **API Token**. Put it in
-   `.env` as `PAPERLESS_API_TOKEN`.
+### 1. Pull the vision model on jarvis
 
-3. **Start the AI services**:
+```bash
+ssh jarvis 'ollama pull qwen2.5vl:32b'
+```
 
-   ```bash
-   docker compose --profile ai up -d
-   ```
+Ollama auto-unloads idle models after ~5 min, so the vision model only occupies
+VRAM during an ingest and frees it afterward.
 
-4. **Configure in-UI**:
-   - paperless-ai (`:3000`): point it at Paperless (`http://webserver:8000`), paste the
-     token, select Ollama provider + `https://ollama.local.wilfredtuscano.com` + text model.
-   - paperless-gpt (`:8080`): reads its config from env; tag a document with the
-     `paperless-gpt` (or `paperless-gpt-ocr`) tag to trigger vision OCR on it.
+### 2. Create an API token, then start the AI services
+
+Generate a DRF token for the admin superuser straight from the container — run it
+as the `paperless` user (UID 1000) so the pre-flight system check can read the
+NFS-backed dirs — then drop it into `.env` and bring the profile up:
+
+```bash
+docker compose exec -u paperless webserver python3 manage.py drf_create_token admin
+# put the token in .env as PAPERLESS_API_TOKEN, then:
+docker compose --profile ai up -d
+```
+
+### 3. Configure the tools
+
+- **paperless-gpt** (`:8080`) is fully env-driven (see compose — token, Ollama URL,
+  models). To vision-OCR a document, tag it **`paperless-gpt-ocr-auto`**: the worker
+  picks it up within ~30s, replaces the content with the vision OCR, and removes the
+  tag (applying `paperless-gpt-failed` if it errors 3×). Recreate the container after
+  changing the token so it reloads env: `docker compose --profile ai up -d --force-recreate paperless-gpt`.
+- **paperless-ai** (`:3000`) keeps its config in its own sqlite via a setup wizard,
+  not the compose env: Paperless URL `http://webserver:8000`, the API token, provider
+  **Ollama**, URL `https://ollama.local.wilfredtuscano.com`, model `qwen2.5vl:32b`
+  (or a lighter text model like `mistral-small3.2:24b` for metadata).
+
+### Verifying the work really runs on our Ollama
+
+While a tagged document processes, on jarvis `ollama ps` shows the model resident
+(`qwen2.5vl:32b … 100% GPU`), and paperless-gpt logs it explicitly:
+
+```
+msg="Successfully processed image" model="qwen2.5vl:32b" provider=ollama …
+```
+
+Vision OCR measurably beats Tesseract on scans — e.g. it corrected a challan amount
+Tesseract misread (`1720.00` → `17220.00 INR`) and reconstructed the table layout.
 
 > **Per-user permissions:** verify each AI tool respects Paperless document ownership
 > before trusting it on the shared library — a tool that queries across all users would
