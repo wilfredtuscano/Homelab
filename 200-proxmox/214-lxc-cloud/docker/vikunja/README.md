@@ -51,7 +51,9 @@ Registration is **disabled** (`VIKUNJA_SERVICE_ENABLEREGISTRATION=false`), so cr
 users with the CLI instead of the signup page:
 
 ```bash
-docker compose exec vikunja vikunja user create -u wilfred -e wilfredtuscano@gmail.com -p '<password>'
+# The binary lives at /app/vikunja/vikunja (it is not on $PATH inside the image).
+docker compose exec -T vikunja /app/vikunja/vikunja user create -u wilfred -e wilfredtuscano@gmail.com -p '<password>'
+# Change a password later: … /app/vikunja/vikunja user change-password -u wilfred
 ```
 
 Use the **same username as the Nextcloud / Immich / Paperless accounts** for consistency.
@@ -65,11 +67,27 @@ config from — never commit it.
 
 ## MCP integration
 
-Claude Code controls Vikunja through an MCP server configured against
-`https://vikunja.local.wilfredtuscano.com/api/v1` with the API token above. Once
-wired, projects/tasks/timelines become native tools (create task, list projects, set
-due dates, …) available whenever Claude is started from `~/workspace`. See the MCP
-config commit for the exact server + settings.
+Claude Code controls Vikunja through the community MCP server
+[`@democratize-technology/vikunja-mcp`](https://github.com/democratize-technology/vikunja-mcp)
+(npx-based, understands long-lived `tk_` API tokens, with guard-rails on destructive
+ops). Register it once at **user scope** so it's available wherever Claude starts:
+
+```bash
+claude mcp add vikunja --scope user \
+  --env VIKUNJA_URL=http://192.168.1.204:3456/api/v1 \
+  --env VIKUNJA_API_TOKEN=<tk_… token> \
+  -- npx -y @democratize-technology/vikunja-mcp
+```
+
+- **URL** — the direct container IP is used on purpose (machine-to-machine; no DNS or
+  TLS dependency, works before the Pi-hole record exists). Switch to
+  `https://vikunja.local.wilfredtuscano.com/api/v1` later if you prefer the hostname.
+- **Token** — lives only in `~/.claude.json`, never this repo. Mint one in the UI
+  (Settings → API Tokens) with project + task scopes.
+
+Restart Claude after registering; projects/tasks/labels/dates then become native tools
+(create task, list projects, set due dates, move between projects, …). Verify with
+`claude mcp list` — it should show `vikunja: … ✔ Connected`.
 
 ## Upgrading
 
