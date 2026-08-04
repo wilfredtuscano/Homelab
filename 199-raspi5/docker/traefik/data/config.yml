@@ -207,6 +207,15 @@ http:
         - https-redirectscheme
       tls: {}
       service: paperless
+    vikunja:
+      entryPoints:
+        - "https"
+      rule: "Host(`vikunja.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: vikunja
     ollama:
       entryPoints:
         - "https"
@@ -359,6 +368,11 @@ http:
       loadBalancer:
         servers:
           - url: "http://192.168.1.204:8000/"
+        passHostHeader: true
+    vikunja:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.204:3456/"
         passHostHeader: true
     ollama:
       loadBalancer:
