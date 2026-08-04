@@ -198,6 +198,15 @@ http:
         - https-redirectscheme
       tls: {}
       service: immich
+    paperless:
+      entryPoints:
+        - "https"
+      rule: "Host(`paperless.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: paperless
     ollama:
       entryPoints:
         - "https"
@@ -345,6 +354,11 @@ http:
       loadBalancer:
         servers:
           - url: "http://192.168.1.204:2283/"
+        passHostHeader: true
+    paperless:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.204:8000/"
         passHostHeader: true
     ollama:
       loadBalancer:
