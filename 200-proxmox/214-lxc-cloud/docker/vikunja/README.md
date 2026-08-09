@@ -74,14 +74,14 @@ ops). Register it once at **user scope** so it's available wherever Claude start
 
 ```bash
 claude mcp add vikunja --scope user \
-  --env VIKUNJA_URL=http://192.168.1.204:3456/api/v1 \
+  --env VIKUNJA_URL=https://vikunja.local.wilfredtuscano.com/api/v1 \
   --env VIKUNJA_API_TOKEN=<tk_… token> \
   -- npx -y @democratize-technology/vikunja-mcp
 ```
 
-- **URL** — the direct container IP is used on purpose (machine-to-machine; no DNS or
-  TLS dependency, works before the Pi-hole record exists). Switch to
-  `https://vikunja.local.wilfredtuscano.com/api/v1` later if you prefer the hostname.
+- **URL** — the Traefik hostname is used (valid Let's Encrypt `*.local.wilfredtuscano.com`
+  cert, so Node trusts it without extra flags; survives an IP change). The direct
+  `http://192.168.1.204:3456/api/v1` is a fine fallback if DNS/Traefik is down.
 - **Token** — lives only in `~/.claude.json`, never this repo. Mint one in the UI
   (Settings → API Tokens) with project + task scopes.
 
