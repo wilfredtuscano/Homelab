@@ -1,0 +1,57 @@
+services:
+  # Vikunja — self-hosted project/task manager. Single image bundles API + web UI.
+  # Driven programmatically from ~/workspace via an MCP server (see README).
+  vikunja:
+    # Movable tag on first deploy; pin to a version after first boot (see README).
+    image: vikunja/vikunja:latest
+    container_name: vikunja
+    security_opt:
+      - apparmor=unconfined
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Must include the trailing slash — used for links + CORS behind Traefik.
+      VIKUNJA_SERVICE_PUBLICURL: https://vikunja.local.wilfredtuscano.com/
+      # JWT signing secret — rotating it logs everyone out.
+      VIKUNJA_SERVICE_SECRET: ${VIKUNJA_SERVICE_SECRET}
+      VIKUNJA_SERVICE_TIMEZONE: America/Los_Angeles
+      # Registration off — users are created via the CLI (see README). Keeps the
+      # instance closed; API tokens for automation are minted per-user afterwards.
+      VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"
+      VIKUNJA_DATABASE_TYPE: postgres
+      VIKUNJA_DATABASE_HOST: db
+      VIKUNJA_DATABASE_DATABASE: vikunja
+      VIKUNJA_DATABASE_USER: vikunja
+      VIKUNJA_DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./files:/app/vikunja/files          # LOCAL: task attachments (uid 1000 must own it)
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "3456:3456"
+    networks:
+      - vikunja
+    restart: unless-stopped
+
+  db:
+    image: docker.io/library/postgres:16
+    container_name: vikunja-db
+    security_opt:
+      - apparmor=unconfined
+    environment:
+      POSTGRES_DB: vikunja
+      POSTGRES_USER: vikunja
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./db:/var/lib/postgresql/data       # LOCAL only — never NFS
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vikunja"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vikunja
+    restart: unless-stopped
+
+networks:
+  vikunja:
