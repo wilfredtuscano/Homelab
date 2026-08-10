@@ -9,12 +9,17 @@
 
 | Resource | Value |
 |---|---|
-| vCPU | 4 cores |
-| RAM | 8 GB |
+| vCPU | 6 cores |
+| RAM | 12 GB |
 | Swap | 512 MB |
 | Disk | 80 GB (local-nvme — Samsung PM9A1 1TB) |
 
 > Migrated from VM 204 to remove full-OS overhead and put MariaDB / SQLite databases on the fast local NVMe pool.
+>
+> Raised from 4 cores / 8 GB on 2026-08-10. Over the preceding 30 days this CT saturated all 4
+> cores (`immich-server` peaked at 219%, `immich-machine-learning` at 187%) and hit 76% of its RAM
+> with a rising trend of ~0.04 GB/day. Funded by reclaiming 2 GB each from starr-ct and plex-ct, so
+> total host allocation was unchanged.
 
 ## Role
 

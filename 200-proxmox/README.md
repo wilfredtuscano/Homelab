@@ -47,16 +47,30 @@ Host capacity: **24 threads** (i7-13700K, 8P+8E = 16 cores) and **62 GB** usable
 | Guest | ID | vCPU | RAM | Swap | Disk |
 |---|---|---|---|---|---|
 | TrueNAS (VM) | 201 | 6 | 24 GB (balloon off) | — | 80 GB |
-| starr-ct | 212 | 4 | 8 GB | 512 MB | 80 GB (`local-nvme`) |
-| plex-ct | 213 | 4 | 8 GB | 512 MB | 80 GB (`local-nvme`) |
-| cloud-ct | 214 | 4 | 8 GB | 512 MB | 80 GB (`local-nvme`) |
+| starr-ct | 212 | 2 | 6 GB | 512 MB | 80 GB (`local-nvme`) |
+| plex-ct | 213 | 4 | 6 GB | 512 MB | 80 GB (`local-nvme`) |
+| cloud-ct | 214 | 6 | 12 GB | 512 MB | 80 GB (`local-nvme`) |
 | **Allocated** | | **18 / 24** | **48 / 62 GB** | | **320 GB** |
 
 vCPU is deliberately oversubscribed — guests are bursty and rarely contend. RAM is not
-oversubscribed; TrueNAS has ballooning disabled because ZFS ARC wants a fixed floor.
+oversubscribed; TrueNAS has ballooning disabled because ZFS ARC wants a fixed floor. Note that
+~6.25 GB of host RAM is ZFS ARC (capped via `zfs_arc_max`), so it does not grow into the headroom.
+
+Sizing was last set on 2026-08-10 from 30 days of Node Exporter + cAdvisor data: `cloud-ct` was
+saturating all 4 cores and at 76% RAM with a rising trend, while `starr-ct` had never exceeded
+1.34 cores. The fix moved capacity between guests rather than committing more of the host.
+Rationale and rejected options: `~/hq/homelab/kb/decisions/2026-08-10-lxc-resource-rebalance.md`.
+
+**Disk sizes are deliberately left at 80 GB.** Shrinking to 40 GB was proposed twice and is now
+cancelled: `local-nvme` is 4% used with over 900 GB free, and a shrink needs stop-and-rebuild per
+container. Do not re-propose it without actual space pressure.
 
 > These figures are the *allocation*, not the usage. Right-sizing should be driven by the
 > Grafana dashboards (Node Exporter + cAdvisor), not by this table.
+
+> **Caveat:** TrueNAS holds 24 GB — 38% of host RAM — and has no exporter and no SSH, so it is the
+> one allocation in the lab with no data behind it. Treat any further rebalancing as blocked on
+> fixing that.
 
 ## Monitoring
 

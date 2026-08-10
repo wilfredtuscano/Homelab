@@ -6,9 +6,18 @@
       documents, so Nextcloud + MariaDB + Redis + Collabora are redundant. Stop and remove the
       stack from cloud-ct, keep `docker/nextcloud/` in the repo as reference-only / non-deployed.
       Frees the largest single block of RAM on the densest CT.
-- [ ] **Right-size LXC resources**: decide 212/213/214 RAM and core allocation from the Grafana
-      Node Exporter + cAdvisor dashboards, *after* the Nextcloud removal changes the numbers.
-      Current allocation is 48 / 62 GB across all guests — see [200-proxmox/README.md](200-proxmox/README.md#resource-allocation).
+- [x] ~~**Right-size LXC resources**~~ Done 2026-08-10 from 30 days of data: starr 8→6 GB / 4→2
+      cores, plex 8→6 GB, cloud 8→12 GB / 4→6 cores. Total allocation unchanged at 48 GB. The
+      80→40 GB disk shrink is cancelled permanently — the pool is 4% full.
+- [ ] **Enable SSH + monitoring on TrueNAS (201).** It holds 24 GB, 38% of host RAM, and is the
+      only guest with no metrics at all. Any further rebalancing is blocked on this.
+- [ ] **Move `immich-machine-learning` to jarvis.** It is what saturated cloud-ct's CPU (187% peak,
+      1.23 GB) while jarvis sits at 4.2 of 32 threads with an idle 96 GB-UMA GPU. Immich supports a
+      remote ML endpoint via `IMMICH_MACHINE_LEARNING_URL`. Needs validating against jarvis's ROCm
+      stack, and accepts a network dependency: if jarvis is down, ML degrades but Immich keeps
+      working.
+- [ ] **Look at `paperless-ai`** — peaks at 1.78 GB, larger than the entire Nextcloud stack, for an
+      auxiliary service.
 - [ ] **Refresh Ollama models on `jarvis`**: most of the library is ~11 months old and superseded.
       `mistral-small3.1:24b` is strictly redundant with the `3.2` already present. Keep
       `qwen2.5vl:32b` — Paperless-GPT depends on it for vision OCR.
