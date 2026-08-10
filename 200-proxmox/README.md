@@ -33,12 +33,30 @@ Hypervisor hosting all VMs and LXCs. HBA controller is passed through to TrueNAS
 
 ## VMs / LXCs
 
-| VM / LXC | IP | Role | Folder |
-|---|---|---|---|
-| TrueNAS Core 13 (VM) | 192.168.1.201 | NAS / ZFS storage | [201-truenas/](201-truenas/) |
-| LXC - Starr | 192.168.1.202 | *arr apps + VPN downloader (Gluetun + qBittorrent) | [212-lxc-starr/](212-lxc-starr/) |
-| LXC - Plex | 192.168.1.203 | Plex + iGPU QuickSync, Audiobookshelf, Calibre-web | [213-lxc-plex/](213-lxc-plex/) |
-| LXC - Cloud | 192.168.1.204 | VaultWarden, Mealie, Nextcloud + MariaDB + Redis + Collabora | [214-lxc-cloud/](214-lxc-cloud/) |
+| VM / LXC | ID | IP | Role | Folder |
+|---|---|---|---|---|
+| TrueNAS Core 13 (VM) | 201 | 192.168.1.201 | NAS / ZFS storage | [201-truenas/](201-truenas/) |
+| LXC - Starr | 212 | 192.168.1.202 | *arr apps + VPN downloader (Gluetun + qBittorrent) | [212-lxc-starr/](212-lxc-starr/) |
+| LXC - Plex | 213 | 192.168.1.203 | Plex + iGPU QuickSync, Audiobookshelf, Calibre-web | [213-lxc-plex/](213-lxc-plex/) |
+| LXC - Cloud | 214 | 192.168.1.204 | VaultWarden, Mealie, Immich, Paperless-ngx, Vikunja, Nextcloud | [214-lxc-cloud/](214-lxc-cloud/) |
+
+## Resource allocation
+
+Host capacity: **24 threads** (i7-13700K, 8P+8E = 16 cores) and **62 GB** usable RAM.
+
+| Guest | ID | vCPU | RAM | Swap | Disk |
+|---|---|---|---|---|---|
+| TrueNAS (VM) | 201 | 6 | 24 GB (balloon off) | — | 80 GB |
+| starr-ct | 212 | 4 | 8 GB | 512 MB | 80 GB (`local-nvme`) |
+| plex-ct | 213 | 4 | 8 GB | 512 MB | 80 GB (`local-nvme`) |
+| cloud-ct | 214 | 4 | 8 GB | 512 MB | 80 GB (`local-nvme`) |
+| **Allocated** | | **18 / 24** | **48 / 62 GB** | | **320 GB** |
+
+vCPU is deliberately oversubscribed — guests are bursty and rarely contend. RAM is not
+oversubscribed; TrueNAS has ballooning disabled because ZFS ARC wants a fixed floor.
+
+> These figures are the *allocation*, not the usage. Right-sizing should be driven by the
+> Grafana dashboards (Node Exporter + cAdvisor), not by this table.
 
 ## IOMMU Setup (PCI Passthrough for HBA)
 

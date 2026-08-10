@@ -25,10 +25,10 @@ Local AI inference server running Ollama with OpenWebUI as a frontend. Strix Hal
 1. [Enable SSH server](../guides/ssh.md)
 2. [Set a static IP](../guides/static-ip.md)
 3. [Install Docker](../guides/docker-install.md)
-4. Deploy stacks:
+4. Install Ollama natively (built from source against system ROCm — see note below)
+5. Deploy stacks:
    1. `docker/portainer/` — see [Portainer Edge Agent guide](../guides/portainer-edge-agent.md)
-   2. `docker/ollama/`
-   3. `docker/openwebui/`
+   2. `docker/openwebui/`
 
 ## Maintenance
 
@@ -39,5 +39,15 @@ Local AI inference server running Ollama with OpenWebUI as a frontend. Strix Hal
 | Folder | Services |
 |---|---|
 | [docker/portainer/](docker/portainer/) | Portainer Edge Agent |
-| [docker/ollama/](docker/ollama/) | Ollama |
-| [docker/openwebui/](docker/openwebui/) | OpenWebUI |
+| [docker/openwebui/](docker/openwebui/) | OpenWebUI (port 3000) |
+| [monitoring-agent/](../monitoring-agent/) | Promtail, node-exporter, cAdvisor (shared stack) |
+
+### Ollama is **not** a Docker stack
+
+Ollama runs as a **native systemd service** on port `11434`, built from source against the
+system ROCm install so it uses the gfx1151 iGPU directly. `docker/ollama/` holds an intentionally
+empty `docker-compose.yml` as a directory marker only — do not deploy it.
+
+Never install or upgrade Ollama with `curl … install.sh | sh`: the stock build ships its own ROCm
+libraries that do not match the system ROCm, and it silently falls back to CPU. Upgrade only by
+rebuilding from source.

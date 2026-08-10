@@ -46,7 +46,7 @@ lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file
 | Folder | Services |
 |---|---|
 | [docker/portainer-agent/](docker/portainer-agent/) | Portainer Edge Agent |
-| [docker/vpn/](docker/vpn/) | Gluetun (Surfshark WireGuard), qBittorrent, Firefox |
+| [docker/vpn/](docker/vpn/) | Gluetun (Surfshark WireGuard), qBittorrent |
 | [docker/starr/](docker/starr/) | Sonarr, Radarr, Prowlarr, Lidarr, Readarr, FlareSolverr, Metube |
 | [docker/monitoring-agent/](docker/monitoring-agent/) | Promtail, node-exporter, cAdvisor |
 

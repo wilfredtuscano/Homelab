@@ -9,9 +9,10 @@
 
 | Resource | Value |
 |---|---|
-| vCPU | 6 cores |
+| vCPU | 4 cores |
 | RAM | 8 GB |
-| Disk | 80 GB (local-zfs) |
+| Swap | 512 MB |
+| Disk | 80 GB (local-nvme — Samsung PM9A1 1TB) |
 | iGPU | Intel Xe (i7-13700K) via `/dev/dri` passthrough |
 
 > Uses 8 GB instead of the previous VM's 16 GB — LXC has no full OS overhead.
@@ -40,6 +41,7 @@ See [guides/lxc-docker.md](../../guides/lxc-docker.md) for the full LXC + Docker
 | [docker/plex/](docker/plex/) | Plex Media Server |
 | [docker/audiobookshelf/](docker/audiobookshelf/) | Audiobookshelf |
 | [docker/calibre-web/](docker/calibre-web/) | Calibre-web |
+| [docker/monitoring-agent/](docker/monitoring-agent/) | Promtail, node-exporter, cAdvisor |
 
 ## NFS Mount
 

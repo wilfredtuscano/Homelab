@@ -7,12 +7,12 @@ Public blueprint for my homelab. Feel free to use this as a reference for your o
 ```
 ISP Modem
 └── Router (192.168.1.1)
-    ├── RasPi 5             192.168.1.199   → DNS, Reverse Proxy, Container Mgmt
+    ├── RasPi 5             192.168.1.199   → DNS, Reverse Proxy, Container Mgmt, Monitoring
     ├── Proxmox Server      192.168.1.200
     │   ├── VM:  TrueNAS Core 13   192.168.1.201   → NAS / ZFS Storage
     │   ├── LXC: Starr             192.168.1.202   → *arr apps + VPN downloader
     │   ├── LXC: Plex              192.168.1.203   → Plex (iGPU QuickSync) + Audiobookshelf + Calibre-web
-    │   └── LXC: Cloud             192.168.1.204   → VaultWarden + Mealie + Nextcloud (MariaDB + Redis + Collabora)
+    │   └── LXC: Cloud             192.168.1.204   → VaultWarden, Mealie, Immich, Paperless-ngx, Vikunja, Nextcloud
     └── GMKTec Evo-X2       192.168.1.205   → Local AI (Ollama + OpenWebUI)
 ```
 
@@ -20,13 +20,16 @@ ISP Modem
 
 | Machine | IP | Role | Folder |
 |---|---|---|---|
-| Raspberry Pi 5 | 192.168.1.199 | Pi-hole, Traefik, Portainer | [199-raspi5/](199-raspi5/) |
+| Raspberry Pi 5 | 192.168.1.199 | Pi-hole + Unbound, Traefik, Portainer, Grafana/Prometheus/Loki, Homepage | [199-raspi5/](199-raspi5/) |
 | Proxmox Server | 192.168.1.200 | Hypervisor | [200-proxmox/](200-proxmox/) |
 | TrueNAS Core 13 (VM) | 192.168.1.201 | NAS / ZFS | [200-proxmox/201-truenas/](200-proxmox/201-truenas/) |
-| LXC - Starr | 192.168.1.202 | *arr + VPN | [200-proxmox/212-lxc-starr/](200-proxmox/212-lxc-starr/) |
+| LXC - Starr | 192.168.1.202 | *arr + VPN downloader | [200-proxmox/212-lxc-starr/](200-proxmox/212-lxc-starr/) |
 | LXC - Plex | 192.168.1.203 | Plex + Audiobookshelf + Calibre-web | [200-proxmox/213-lxc-plex/](200-proxmox/213-lxc-plex/) |
-| LXC - Cloud | 192.168.1.204 | VaultWarden + Mealie + Nextcloud | [200-proxmox/214-lxc-cloud/](200-proxmox/214-lxc-cloud/) |
-| GMKTec Evo-X2 | 192.168.1.205 | Ollama / OpenWebUI | [205-gmktek/](205-gmktek/) |
+| LXC - Cloud | 192.168.1.204 | VaultWarden, Mealie, Immich, Paperless-ngx, Vikunja, Nextcloud | [200-proxmox/214-lxc-cloud/](200-proxmox/214-lxc-cloud/) |
+| GMKTec Evo-X2 | 192.168.1.205 | Ollama (native) / OpenWebUI | [205-gmktek/](205-gmktek/) |
+
+> Every host except TrueNAS also runs a monitoring agent (Promtail, node-exporter, cAdvisor) and a
+> Portainer Edge Agent, reporting to the RasPi 5. Not repeated per-row above.
 
 ## Remote Access
 
