@@ -15,11 +15,16 @@
       memory; the rest is ARC. But the 98.10% hit ratio against 317M NFS reads is what makes
       streaming and library scans fast, so shrinking it is a genuine trade. Watch the hit ratio
       trend in Grafana for a few weeks before deciding.
-- [ ] **Move `immich-machine-learning` to jarvis.** It is what saturated cloud-ct's CPU (187% peak,
-      1.23 GB) while jarvis sits at 4.2 of 32 threads with an idle 96 GB-UMA GPU. Immich supports a
-      remote ML endpoint via `IMMICH_MACHINE_LEARNING_URL`. Needs validating against jarvis's ROCm
-      stack, and accepts a network dependency: if jarvis is down, ML degrades but Immich keeps
-      working.
+- [x] ~~**Move `immich-machine-learning` to jarvis.**~~ Done 2026-08-10 on the ROCm image: 24.0 →
+      61.9 img/s at 8-way concurrency, GPU verified at 64%.
+- [ ] **Remove the fallback ML container from cloud-ct** after a clean week (i.e. on/after
+      2026-08-17). Frees ~1.2 GB. Until then it is deliberately running but unused.
+- [ ] **Confirm Immich ML end-to-end on the next upload.** The health probe passes and Immich
+      logged the jarvis server as healthy, but no ML work was queued at cutover time, so real
+      inference through the new path has not been observed yet.
+- [ ] **Consider automatic ML failover.** `IMMICH_MACHINE_LEARNING_URL` takes one URL, so fallback
+      is currently manual. Setting `machineLearning.urls` as an array in Admin → Settings → Machine
+      Learning would fail over automatically, at the cost of moving the setting out of this repo.
 - [ ] **Look at `paperless-ai`** — peaks at 1.78 GB, larger than the entire Nextcloud stack, for an
       auxiliary service.
 - [ ] **Refresh Ollama models on `jarvis`**: most of the library is ~11 months old and superseded.

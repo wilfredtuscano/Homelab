@@ -40,7 +40,25 @@ Local AI inference server running Ollama with OpenWebUI as a frontend. Strix Hal
 |---|---|
 | [docker/portainer/](docker/portainer/) | Portainer Edge Agent |
 | [docker/openwebui/](docker/openwebui/) | OpenWebUI (port 3000) |
+| [docker/immich-ml/](docker/immich-ml/) | Immich machine-learning, ROCm (port 3003) — serves Immich on cloud-ct |
 | [monitoring-agent/](../monitoring-agent/) | Promtail, node-exporter, cAdvisor (shared stack) |
+
+### Immich ML offload
+
+Immich's machine-learning container runs here rather than on cloud-ct (214), where it used to
+saturate every core during bulk import. Measured on CLIP ViT-B-32 at 8-way concurrency:
+
+| Where | Throughput |
+|---|---|
+| cloud-ct, 6 cores, shared with 22 containers | 24.0 img/s |
+| jarvis, CPU image | 38.5 img/s |
+| **jarvis, ROCm image** | **61.9 img/s** |
+
+Single-image latency is ~0.12s everywhere — the gain is throughput under concurrency, which is the
+case that actually caused trouble. GPU use verified at 64% during a sustained run.
+
+The ROCm image is **23.6 GB** unpacked, against 1.29 GB for the CPU variant. That is the price of
+the 2.6x.
 
 ### Ollama is **not** a Docker stack
 
