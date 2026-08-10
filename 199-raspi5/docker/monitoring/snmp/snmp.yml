@@ -1,0 +1,157 @@
+# snmp_exporter config for TrueNAS Core 13 (192.168.1.201).
+#
+# Hand-written rather than generated: TrueNAS exposes everything we care about
+# under two trees, so the generator + MIB toolchain is not worth carrying.
+#   1.3.6.1.4.1.50536  TRUENAS-MIB  - zpools and ZFS ARC
+#   1.3.6.1.4.1.2021   UCD-SNMP-MIB - memory and CPU
+#
+# This file holds MODULES ONLY - no credentials, so it is safe to commit.
+# The community lives in `auth.yml` alongside it, which is gitignored and
+# exists only on the host. snmp_exporter accepts repeated --config.file and
+# merges them; see auth.yml.example and the compose file.
+#
+# Note: --config.expand-environment-variables does NOT work in snmp_exporter
+# 0.30.1 - the placeholder is sent to the wire verbatim (verified with tcpdump).
+# Hence the split-file approach rather than an env var.
+
+modules:
+  truenas:
+    walk:
+      - 1.3.6.1.2.1.1.3           # sysUpTime
+      - 1.3.6.1.4.1.50536.1.1.1.1 # zpoolTable
+      - 1.3.6.1.4.1.50536.1.4     # ZFS ARC scalars
+      - 1.3.6.1.4.1.2021.4        # UCD memory
+      - 1.3.6.1.4.1.2021.11       # UCD CPU
+      - 1.3.6.1.2.1.31.1.1.1      # ifXTable (HC counters)
+    # Index labels are only used to join to pool/interface names. The exporter
+    # keeps them (drop_source_indexes is a generator-only option), so the raw
+    # zpoolIndex/ifIndex labels are stripped in the Prometheus job instead.
+    metrics:
+
+      # ---- system ----
+      - name: truenas_uptime_seconds
+        oid: 1.3.6.1.2.1.1.3
+        type: gauge
+        help: sysUpTime in hundredths of a second - divide by 100
+
+      # ---- ZFS ARC ----
+      # Sizes are in KiB. The hit ratio is published as a string, so it is
+      # pulled out with a regex into a real gauge.
+      - name: truenas_zfs_arc_size_kib
+        oid: 1.3.6.1.4.1.50536.1.4.1
+        type: gauge
+        help: ZFS ARC current size in KiB
+      - name: truenas_zfs_arc_meta_kib
+        oid: 1.3.6.1.4.1.50536.1.4.2
+        type: gauge
+        help: ZFS ARC metadata size in KiB
+      - name: truenas_zfs_arc_data_kib
+        oid: 1.3.6.1.4.1.50536.1.4.3
+        type: gauge
+        help: ZFS ARC data size in KiB
+      - name: truenas_zfs_arc_target_kib
+        oid: 1.3.6.1.4.1.50536.1.4.6
+        type: gauge
+        help: ZFS ARC target size (c) in KiB
+      - name: truenas_zfs_arc_hit_ratio_percent
+        oid: 1.3.6.1.4.1.50536.1.4.9
+        type: DisplayString
+        help: ZFS ARC cache hit ratio as a percentage
+        regex_extracts:
+          "":
+            - regex: '^([0-9.]+)$'
+              value: '$1'
+
+      # ---- memory (UCD) ----
+      - name: truenas_memory_total_real_kib
+        oid: 1.3.6.1.4.1.2021.4.5
+        type: gauge
+        help: Total physical memory in KiB
+      - name: truenas_memory_avail_real_kib
+        oid: 1.3.6.1.4.1.2021.4.6
+        type: gauge
+        help: Available physical memory in KiB. Excludes ARC, which is reclaimable
+      - name: truenas_memory_total_free_kib
+        oid: 1.3.6.1.4.1.2021.4.11
+        type: gauge
+        help: Total free memory including swap in KiB
+      - name: truenas_memory_cached_kib
+        oid: 1.3.6.1.4.1.2021.4.15
+        type: gauge
+        help: Cached memory in KiB
+
+      # ---- CPU (UCD raw counters, use rate()) ----
+      - name: truenas_cpu_raw_user
+        oid: 1.3.6.1.4.1.2021.11.50
+        type: counter
+        help: CPU ticks in user mode
+      - name: truenas_cpu_raw_system
+        oid: 1.3.6.1.4.1.2021.11.52
+        type: counter
+        help: CPU ticks in system mode
+      - name: truenas_cpu_raw_idle
+        oid: 1.3.6.1.4.1.2021.11.53
+        type: counter
+        help: CPU ticks idle
+
+      # ---- zpools ----
+      # Sizes are in allocation units; multiply by truenas_zpool_alloc_unit_bytes
+      # to get bytes. Vault reports 32768-byte units.
+      - name: truenas_zpool_alloc_unit_bytes
+        oid: 1.3.6.1.4.1.50536.1.1.1.1.3
+        type: gauge
+        help: Size of one allocation unit in bytes
+        indexes: [{labelname: zpoolIndex, type: gauge}]
+        lookups: &zpool_lookup
+          - labels: [zpoolIndex]
+            labelname: pool
+            oid: 1.3.6.1.4.1.50536.1.1.1.1.2
+            type: DisplayString
+      - name: truenas_zpool_size_units
+        oid: 1.3.6.1.4.1.50536.1.1.1.1.4
+        type: gauge
+        help: Pool total size in allocation units
+        indexes: [{labelname: zpoolIndex, type: gauge}]
+        lookups: *zpool_lookup
+      - name: truenas_zpool_used_units
+        oid: 1.3.6.1.4.1.50536.1.1.1.1.5
+        type: gauge
+        help: Pool used space in allocation units
+        indexes: [{labelname: zpoolIndex, type: gauge}]
+        lookups: *zpool_lookup
+      - name: truenas_zpool_available_units
+        oid: 1.3.6.1.4.1.50536.1.1.1.1.6
+        type: gauge
+        help: Pool free space in allocation units
+        indexes: [{labelname: zpoolIndex, type: gauge}]
+        lookups: *zpool_lookup
+      - name: truenas_zpool_read_bytes_total
+        oid: 1.3.6.1.4.1.50536.1.1.1.1.10
+        type: counter
+        help: Bytes read from the pool
+        indexes: [{labelname: zpoolIndex, type: gauge}]
+        lookups: *zpool_lookup
+      - name: truenas_zpool_write_bytes_total
+        oid: 1.3.6.1.4.1.50536.1.1.1.1.11
+        type: counter
+        help: Bytes written to the pool
+        indexes: [{labelname: zpoolIndex, type: gauge}]
+        lookups: *zpool_lookup
+
+      # ---- interfaces ----
+      - name: truenas_if_in_octets_total
+        oid: 1.3.6.1.2.1.31.1.1.1.6
+        type: counter
+        help: Bytes received on the interface
+        indexes: [{labelname: ifIndex, type: gauge}]
+        lookups: &if_lookup
+          - labels: [ifIndex]
+            labelname: interface
+            oid: 1.3.6.1.2.1.31.1.1.1.1
+            type: DisplayString
+      - name: truenas_if_out_octets_total
+        oid: 1.3.6.1.2.1.31.1.1.1.10
+        type: counter
+        help: Bytes sent on the interface
+        indexes: [{labelname: ifIndex, type: gauge}]
+        lookups: *if_lookup

@@ -9,8 +9,12 @@
 - [x] ~~**Right-size LXC resources**~~ Done 2026-08-10 from 30 days of data: starr 8→6 GB / 4→2
       cores, plex 8→6 GB, cloud 8→12 GB / 4→6 cores. Total allocation unchanged at 48 GB. The
       80→40 GB disk shrink is cancelled permanently — the pool is 4% full.
-- [ ] **Enable SSH + monitoring on TrueNAS (201).** It holds 24 GB, 38% of host RAM, and is the
-      only guest with no metrics at all. Any further rebalancing is blocked on this.
+- [x] ~~**Enable SSH + monitoring on TrueNAS (201).**~~ Done 2026-08-10: SSH key-only, SNMP scraped
+      via snmp-exporter. Measured 20.26 GiB ARC / ~2.9 GiB real, 98.10% hit ratio.
+- [ ] **Decide whether to reclaim RAM from TrueNAS.** Only ~2.9 GB of its 24 GB is real process
+      memory; the rest is ARC. But the 98.10% hit ratio against 317M NFS reads is what makes
+      streaming and library scans fast, so shrinking it is a genuine trade. Watch the hit ratio
+      trend in Grafana for a few weeks before deciding.
 - [ ] **Move `immich-machine-learning` to jarvis.** It is what saturated cloud-ct's CPU (187% peak,
       1.23 GB) while jarvis sits at 4.2 of 32 threads with an idle 96 GB-UMA GPU. Immich supports a
       remote ML endpoint via `IMMICH_MACHINE_LEARNING_URL`. Needs validating against jarvis's ROCm

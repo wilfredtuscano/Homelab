@@ -49,6 +49,32 @@ scrape_configs:
         target_label: host
         replacement: jarvis
 
+  # In-guest metrics for TrueNAS over SNMP. This is the only source that can
+  # separate ZFS ARC (reclaimable cache) from real memory use - the pve job
+  # cannot, because ARC always expands to fill the VM's allocation.
+  - job_name: snmp-truenas
+    metrics_path: /snmp
+    params:
+      auth: [truenas_v2]
+      module: [truenas]
+    static_configs:
+      - targets:
+          - '192.168.1.201'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: host
+        replacement: truenas
+      - target_label: __address__
+        replacement: 'snmp-exporter:9116'
+    # The pool/interface name is joined in by the exporter; the raw index
+    # labels add nothing and would split series on renumbering.
+    metric_relabel_configs:
+      - regex: 'zpoolIndex|ifIndex'
+        action: labeldrop
+
   # Per-guest metrics straight from the Proxmox API via pve-exporter.
   # This is the only source covering TrueNAS (VM 201), which has no
   # in-guest exporter. Note the memory figure for a VM with ballooning

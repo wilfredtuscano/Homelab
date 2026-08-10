@@ -45,6 +45,23 @@ services:
       - monitoring
     restart: unless-stopped
 
+  # In-guest metrics for TrueNAS (192.168.1.201), which cannot run an exporter.
+  # Config is split so no secret is committed: snmp.yml holds the modules and
+  # is in git; auth.yml holds the community and is gitignored, host-only.
+  # snmp_exporter merges repeated --config.file arguments.
+  snmp-exporter:
+    image: prom/snmp-exporter:latest
+    container_name: snmp-exporter
+    command:
+      - '--config.file=/etc/snmp_exporter/snmp.yml'
+      - '--config.file=/etc/snmp_exporter/auth.yml'
+    volumes:
+      - ./snmp/snmp.yml:/etc/snmp_exporter/snmp.yml:ro
+      - ./snmp/auth.yml:/etc/snmp_exporter/auth.yml:ro
+    networks:
+      - monitoring
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana

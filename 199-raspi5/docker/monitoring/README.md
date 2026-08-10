@@ -80,6 +80,38 @@ All data is stored in local bind mounts on RasPi5:
 | `node` | Node Exporter | 199, **200 (native pkg)**, 202, 203, 204, 205 |
 | `cadvisor` | cAdvisor | 202, 203, 204, 205 (no Docker on 200) |
 | `pve` | pve-exporter | Every Proxmox guest — VM 201 and LXC 212/213/214 |
+| `snmp-truenas` | snmp-exporter | 201 in-guest — ZFS ARC, memory, CPU, pools, interfaces |
+
+### snmp-exporter — TrueNAS
+
+TrueNAS Core cannot run a node exporter (read-only FreeBSD base), so it is scraped over SNMP.
+This is the only source that separates **ZFS ARC from real memory use** — the `pve` job cannot,
+because ARC expands to fill the VM's allocation and so reports ~95% forever.
+
+Config is deliberately split so no secret is committed:
+
+| File | In git? | Holds |
+|---|---|---|
+| `snmp/snmp.yml` | yes | Module definitions — OIDs, metric names, lookups |
+| `snmp/auth.yml` | **no** | The community string. See `snmp/auth.yml.example` |
+
+`snmp_exporter` merges repeated `--config.file` arguments, which is what makes the split work.
+
+> `--config.expand-environment-variables` is **broken in snmp_exporter 0.30.1** — a `${VAR}`
+> placeholder is sent to the wire verbatim as the community, and the only symptom is a scrape
+> timeout. Confirmed with `tcpdump` on the TrueNAS side. Don't try to reintroduce the env-var
+> approach without re-testing it.
+
+Useful queries:
+
+```promql
+truenas_zfs_arc_size_kib / 1024 / 1024                     # ARC size in GiB
+truenas_zfs_arc_hit_ratio_percent                          # cache effectiveness
+(truenas_memory_total_real_kib
+   - truenas_memory_avail_real_kib
+   - truenas_zfs_arc_size_kib) / 1024 / 1024               # real (non-ARC) usage in GiB
+truenas_zpool_used_units * truenas_zpool_alloc_unit_bytes   # pool bytes used, by pool
+```
 
 ### pve-exporter
 

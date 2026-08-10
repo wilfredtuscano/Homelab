@@ -1,0 +1,12 @@
+# Copy to `auth.yml` on the host and set the real community string.
+# `auth.yml` is gitignored - it is the only part of the snmp_exporter config
+# that carries a secret.
+#
+# The community is whatever is set in the TrueNAS UI under
+# System Settings -> Services -> SNMP. Read it back with:
+#   ssh truenas "midclt call snmp.config" | python3 -c "import sys,json;print(json.load(sys.stdin)['community'])"
+
+auths:
+  truenas_v2:
+    community: CHANGEME
+    version: 2
