@@ -49,6 +49,28 @@ scrape_configs:
         target_label: host
         replacement: jarvis
 
+  # Per-guest metrics straight from the Proxmox API via pve-exporter.
+  # This is the only source covering TrueNAS (VM 201), which has no
+  # in-guest exporter. Note the memory figure for a VM with ballooning
+  # off reflects what the host has committed, not what the guest needs -
+  # ZFS ARC inside TrueNAS always expands to fill it.
+  - job_name: pve
+    metrics_path: /pve
+    params:
+      module: [default]
+      cluster: ['1']
+      node: ['1']
+    static_configs:
+      - targets:
+          - '192.168.1.200'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 'pve-exporter:9221'
+
   # Container metrics via cAdvisor. No entry for 200 - the hypervisor
   # does not run Docker.
   - job_name: cadvisor

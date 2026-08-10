@@ -29,6 +29,22 @@ services:
       - monitoring
     restart: unless-stopped
 
+  # Hypervisor-side metrics for every Proxmox guest (VMs and LXCs),
+  # including TrueNAS which has no in-guest exporter.
+  # Auth is a read-only PVEAuditor API token (prometheus@pve!monitoring).
+  # Not published on the host - Prometheus reaches it over the compose network.
+  pve-exporter:
+    image: prompve/prometheus-pve-exporter:latest
+    container_name: pve-exporter
+    environment:
+      - PVE_USER=${PVE_USER}
+      - PVE_TOKEN_NAME=${PVE_TOKEN_NAME}
+      - PVE_TOKEN_VALUE=${PVE_TOKEN_VALUE}
+      - PVE_VERIFY_SSL=${PVE_VERIFY_SSL}
+    networks:
+      - monitoring
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana

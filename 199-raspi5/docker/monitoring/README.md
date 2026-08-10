@@ -73,6 +73,38 @@ All data is stored in local bind mounts on RasPi5:
 | `./prometheus/data` | Prometheus metrics |
 | `./grafana/data` | Grafana config, dashboards, alert rules |
 
+## Scrape coverage
+
+| Job | Source | Covers |
+|---|---|---|
+| `node` | Node Exporter | 199, **200 (native pkg)**, 202, 203, 204, 205 |
+| `cadvisor` | cAdvisor | 202, 203, 204, 205 (no Docker on 200) |
+| `pve` | pve-exporter | Every Proxmox guest — VM 201 and LXC 212/213/214 |
+
+### pve-exporter
+
+Queries the Proxmox API directly and reports per-guest CPU, memory and disk for every VM and
+container. It is the **only** source covering TrueNAS (VM 201), which runs no in-guest exporter.
+
+Auth is a read-only API token (`prometheus@pve!monitoring`, role `PVEAuditor`) created with:
+
+```bash
+pveum user add prometheus@pve
+pveum acl modify / --user prometheus@pve --role PVEAuditor
+pveum user token add prometheus@pve monitoring --privsep 0
+```
+
+The token value goes in `.env` as `PVE_TOKEN_VALUE` (gitignored). The container is not published
+on a host port — Prometheus reaches it over the compose network at `pve-exporter:9221`.
+
+> **Reading the TrueNAS memory figure correctly.** VM 201 has ballooning disabled, so
+> `pve_memory_usage_bytes` reports what the host has *committed*, not what the guest needs — it
+> sits around 95% permanently because ZFS ARC inside TrueNAS expands to fill whatever it is given.
+> Right-sizing TrueNAS requires in-guest metrics (SNMP), not this number.
+
 ## Dependencies
 
-Each VM must be running the monitoring agent stack from `monitoring-agent/`. See [monitoring-agent README](../../../monitoring-agent/README.md).
+Each monitored host must be running the monitoring agent stack from `monitoring-agent/`. See
+[monitoring-agent README](../../../monitoring-agent/README.md). The Proxmox host is the exception —
+it runs the Debian `prometheus-node-exporter` package instead, and pve-exporter needs nothing
+installed on the guests at all.
