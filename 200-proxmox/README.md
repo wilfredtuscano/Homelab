@@ -58,6 +58,23 @@ oversubscribed; TrueNAS has ballooning disabled because ZFS ARC wants a fixed fl
 > These figures are the *allocation*, not the usage. Right-sizing should be driven by the
 > Grafana dashboards (Node Exporter + cAdvisor), not by this table.
 
+## Monitoring
+
+The hypervisor runs **node-exporter as a native Debian package**, not a container — there is no
+Docker on this host and there should not be.
+
+```bash
+apt-get install -y prometheus-node-exporter
+```
+
+It listens on `:9100`, is enabled at boot, and is scraped by Prometheus on the RasPi 5 as job
+`node`, host label `proxmox`. There is no cAdvisor entry for this host because it runs no
+containers.
+
+> Host-level metrics only landed here on 2026-08-10 — before that the hypervisor was the one
+> machine in the lab with no metrics at all, which is why earlier right-sizing reviews had to work
+> from guest data alone. Prometheus retention is 30 days.
+
 ## IOMMU Setup (PCI Passthrough for HBA)
 
 Required to pass the LSI 9211-8i HBA directly to the TrueNAS VM, giving TrueNAS full control of the disks.

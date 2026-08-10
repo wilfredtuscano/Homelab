@@ -17,9 +17,9 @@
 
 ## Defects found in the 2026-08-10 access sweep
 
-- [ ] **Proxmox host (200) is not monitored at all.** Prometheus scrapes 199/202/203/204/205 but
-      never the hypervisor — there is no node-exporter on it. Blocks any resourcing decision that
-      needs host-level RAM/CPU pressure. Fix before the right-sizing review.
+- [x] ~~**Proxmox host (200) is not monitored at all.**~~ Fixed 2026-08-10: `prometheus-node-exporter`
+      installed natively on the hypervisor and added to the Prometheus `node` job as host
+      `proxmox`. Let it accumulate history before making sizing decisions from it.
 - [ ] **Traefik's Docker provider is broken.** `traefik:v3.0` (3.0.4) negotiates Docker API 1.24;
       the daemon on dnspi now requires ≥1.40, so the provider is in a permanent retry loop and
       floods the logs. Consequence: routers defined via Docker labels are never registered, which
@@ -43,6 +43,11 @@
 - [ ] **Traefik**: Rename `199-raspi5/docker/traefik/data/` config folder (e.g., to `config/`) to avoid conflict with the global `data/` gitignore rule. Currently worked around with a gitignore override in root `.gitignore`.
 - [ ] **`203-ubuntu-plex/`**: superseded by `213-lxc-plex/` after the VM→LXC migration. Decide
       whether to keep it as historical reference or drop it.
+- [ ] **Audit repo compose files against what is actually deployed.** For every stack on every
+      host, diff the repo `docker-compose.y*ml` (and its config files) against the copy running on
+      the box, and reconcile in whichever direction is correct. The repo is the blueprint but has
+      never been verified as the source of truth. Spot-checked on 2026-08-10: `prometheus.yml`
+      differed only by a trailing newline, which is benign — the rest is unverified.
 
 ## Media
 
