@@ -1,6 +1,13 @@
 services:
   traefik:
-    image: traefik:v3.0
+    # Pinned to an exact patch - bump deliberately, not by drift.
+    #
+    # Must stay >= v3.1. Traefik v3.0 hardcodes Docker API version 1.24, and
+    # the daemon here now requires >= 1.40, so on v3.0 the Docker provider dies
+    # in a permanent retry loop (~42k errors/day) and every label-defined router
+    # silently fails to register - including this container's own dashboard.
+    # DOCKER_API_VERSION does NOT work around it; v3.0 ignores the variable.
+    image: traefik:v3.7.10
     container_name: traefik
     restart: unless-stopped
     security_opt:

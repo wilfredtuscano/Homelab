@@ -38,12 +38,11 @@
 - [x] ~~**Proxmox host (200) is not monitored at all.**~~ Fixed 2026-08-10: `prometheus-node-exporter`
       installed natively on the hypervisor and added to the Prometheus `node` job as host
       `proxmox`. Let it accumulate history before making sizing decisions from it.
-- [ ] **Traefik's Docker provider is broken.** `traefik:v3.0` (3.0.4) negotiates Docker API 1.24;
-      the daemon on dnspi now requires ≥1.40, so the provider is in a permanent retry loop and
-      floods the logs. Consequence: routers defined via Docker labels are never registered, which
-      is why `traefik-dashboard.local.wilfredtuscano.com` returns 404. The file provider
-      (`config.yml`) is unaffected, so all other services still route. Fix by bumping the Traefik
-      image, or pin `DOCKER_API_VERSION` on the container.
+- [x] ~~**Traefik's Docker provider is broken.**~~ Fixed 2026-08-12 by upgrading `traefik:v3.0`
+      (3.0.4) → `v3.7.10`. Provider errors went 290-per-10-min → 0 and the dashboard returns 401
+      (auth challenge) instead of 404. Certificate serial unchanged, so nothing was re-issued.
+      Note: `DOCKER_API_VERSION` does **not** work around this — v3.0 hardcodes API 1.24 and
+      ignores the variable. Verified against a throwaway container before touching ingress.
 - [ ] **`router.local.wilfredtuscano.com` returns 502.** The service sets `passHostHeader: true`,
       and the router at 192.168.1.1 drops the connection when the Host header is not its own
       (verified: 401 with default Host, no response at all with the proxied Host). Set
