@@ -27,9 +27,9 @@
       Learning would fail over automatically, at the cost of moving the setting out of this repo.
 - [ ] **Look at `paperless-ai`** — peaks at 1.78 GB, larger than the entire Nextcloud stack, for an
       auxiliary service.
-- [ ] **Refresh Ollama models on `jarvis`**: most of the library is ~11 months old and superseded.
-      `mistral-small3.1:24b` is strictly redundant with the `3.2` already present. Keep
-      `qwen2.5vl:32b` — Paperless-GPT depends on it for vision OCR.
+- [x] ~~**Refresh Ollama models on `jarvis`**~~ Done 2026-08-12: pruned 15 models → 4, freeing
+      220 GB (disk 21% → 9%). `qwen2.5vl:32b` kept — paperless-gpt depends on it. Replacements
+      deliberately not pulled; `ollama pull` on demand when a real need appears.
 - [ ] **TrueNAS SSH is disabled** (201 refuses port 22): decide whether to enable it for
       automation, or document the web UI / Proxmox console as the only management path.
 

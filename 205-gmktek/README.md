@@ -60,6 +60,28 @@ case that actually caused trouble. GPU use verified at 64% during a sustained ru
 The ROCm image is **23.6 GB** unpacked, against 1.29 GB for the CPU variant. That is the price of
 the 2.6x.
 
+### Model library
+
+Pruned 2026-08-12 from 15 models / ~290 GB down to 4 / ~59 GB, freeing **220 GB**. Disk went from
+21% to 9%.
+
+| Model | Size | Why it is kept |
+|---|---|---|
+| `qwen2.5vl:32b` | 21 GB | **Load-bearing** — paperless-gpt uses it for both `LLM_MODEL` and `VISION_LLM_MODEL`. Do not remove. |
+| `mistral-small3.2:24b` | 15 GB | General-purpose |
+| `qwen3-coder:30b` | 18 GB | Coding |
+| `qwen2.5-coder:7b` | 4.7 GB | Small/fast coding |
+
+Removed: eleven models pulled 11–12 months earlier (`llama3.3:70b`, `deepseek-r1:70b`,
+`gpt-oss:120b`, `gpt-oss:20b`, `qwen3:30b`, `codellama:34b`, `codellama:7b`, `codegemma:7b`,
+`deepseek-coder-v2:16b`, `deepseek-r1:1.5b`) plus `mistral-small3.1:24b`, which was strictly
+superseded by the `3.2` already present.
+
+Before removing anything, check what references it. As of the prune the only traceable consumer of
+Ollama was paperless-gpt; paperless-ai has no LLM configured, and Open WebUI's database held zero
+chats. Anything removed can be re-pulled on demand — `ollama pull` is cheap, 220 GB of stale
+weights is not.
+
 ### Ollama is **not** a Docker stack
 
 Ollama runs as a **native systemd service** on port `11434`, built from source against the
