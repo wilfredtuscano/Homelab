@@ -21,6 +21,9 @@ paperless-gpt/
 
 # secrets
 cf_api_token.txt
+# snmp_exporter community string - modules live in snmp.yml (committed),
+# credentials in auth.yml (host-only). See snmp/auth.yml.example.
+199-raspi5/docker/monitoring/snmp/auth.yml
 
 # editor
 .vscode/

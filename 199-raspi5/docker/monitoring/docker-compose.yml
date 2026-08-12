@@ -29,6 +29,39 @@ services:
       - monitoring
     restart: unless-stopped
 
+  # Hypervisor-side metrics for every Proxmox guest (VMs and LXCs),
+  # including TrueNAS which has no in-guest exporter.
+  # Auth is a read-only PVEAuditor API token (prometheus@pve!monitoring).
+  # Not published on the host - Prometheus reaches it over the compose network.
+  pve-exporter:
+    image: prompve/prometheus-pve-exporter:latest
+    container_name: pve-exporter
+    environment:
+      - PVE_USER=${PVE_USER}
+      - PVE_TOKEN_NAME=${PVE_TOKEN_NAME}
+      - PVE_TOKEN_VALUE=${PVE_TOKEN_VALUE}
+      - PVE_VERIFY_SSL=${PVE_VERIFY_SSL}
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # In-guest metrics for TrueNAS (192.168.1.201), which cannot run an exporter.
+  # Config is split so no secret is committed: snmp.yml holds the modules and
+  # is in git; auth.yml holds the community and is gitignored, host-only.
+  # snmp_exporter merges repeated --config.file arguments.
+  snmp-exporter:
+    image: prom/snmp-exporter:latest
+    container_name: snmp-exporter
+    command:
+      - '--config.file=/etc/snmp_exporter/snmp.yml'
+      - '--config.file=/etc/snmp_exporter/auth.yml'
+    volumes:
+      - ./snmp/snmp.yml:/etc/snmp_exporter/snmp.yml:ro
+      - ./snmp/auth.yml:/etc/snmp_exporter/auth.yml:ro
+    networks:
+      - monitoring
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana

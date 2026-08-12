@@ -33,12 +33,61 @@ Hypervisor hosting all VMs and LXCs. HBA controller is passed through to TrueNAS
 
 ## VMs / LXCs
 
-| VM / LXC | IP | Role | Folder |
-|---|---|---|---|
-| TrueNAS Core 13 (VM) | 192.168.1.201 | NAS / ZFS storage | [201-truenas/](201-truenas/) |
-| LXC - Starr | 192.168.1.202 | *arr apps + VPN downloader (Gluetun + qBittorrent) | [212-lxc-starr/](212-lxc-starr/) |
-| LXC - Plex | 192.168.1.203 | Plex + iGPU QuickSync, Audiobookshelf, Calibre-web | [213-lxc-plex/](213-lxc-plex/) |
-| LXC - Cloud | 192.168.1.204 | VaultWarden, Mealie, Nextcloud + MariaDB + Redis + Collabora | [214-lxc-cloud/](214-lxc-cloud/) |
+| VM / LXC | ID | IP | Role | Folder |
+|---|---|---|---|---|
+| TrueNAS Core 13 (VM) | 201 | 192.168.1.201 | NAS / ZFS storage | [201-truenas/](201-truenas/) |
+| LXC - Starr | 212 | 192.168.1.202 | *arr apps + VPN downloader (Gluetun + qBittorrent) | [212-lxc-starr/](212-lxc-starr/) |
+| LXC - Plex | 213 | 192.168.1.203 | Plex + iGPU QuickSync, Audiobookshelf, Calibre-web | [213-lxc-plex/](213-lxc-plex/) |
+| LXC - Cloud | 214 | 192.168.1.204 | VaultWarden, Mealie, Immich, Paperless-ngx, Vikunja, Nextcloud | [214-lxc-cloud/](214-lxc-cloud/) |
+
+## Resource allocation
+
+Host capacity: **24 threads** (i7-13700K, 8P+8E = 16 cores) and **62 GB** usable RAM.
+
+| Guest | ID | vCPU | RAM | Swap | Disk |
+|---|---|---|---|---|---|
+| TrueNAS (VM) | 201 | 6 | 24 GB (balloon off) | — | 80 GB |
+| starr-ct | 212 | 2 | 6 GB | 512 MB | 80 GB (`local-nvme`) |
+| plex-ct | 213 | 4 | 6 GB | 512 MB | 80 GB (`local-nvme`) |
+| cloud-ct | 214 | 6 | 12 GB | 512 MB | 80 GB (`local-nvme`) |
+| **Allocated** | | **18 / 24** | **48 / 62 GB** | | **320 GB** |
+
+vCPU is deliberately oversubscribed — guests are bursty and rarely contend. RAM is not
+oversubscribed; TrueNAS has ballooning disabled because ZFS ARC wants a fixed floor. Note that
+~6.25 GB of host RAM is ZFS ARC (capped via `zfs_arc_max`), so it does not grow into the headroom.
+
+Sizing was last set on 2026-08-10 from 30 days of Node Exporter + cAdvisor data: `cloud-ct` was
+saturating all 4 cores and at 76% RAM with a rising trend, while `starr-ct` had never exceeded
+1.34 cores. The fix moved capacity between guests rather than committing more of the host.
+Rationale and rejected options: `~/hq/homelab/kb/decisions/2026-08-10-lxc-resource-rebalance.md`.
+
+**Disk sizes are deliberately left at 80 GB.** Shrinking to 40 GB was proposed twice and is now
+cancelled: `local-nvme` is 4% used with over 900 GB free, and a shrink needs stop-and-rebuild per
+container. Do not re-propose it without actual space pressure.
+
+> These figures are the *allocation*, not the usage. Right-sizing should be driven by the
+> Grafana dashboards (Node Exporter + cAdvisor), not by this table.
+
+> **Caveat:** TrueNAS holds 24 GB — 38% of host RAM — and has no exporter and no SSH, so it is the
+> one allocation in the lab with no data behind it. Treat any further rebalancing as blocked on
+> fixing that.
+
+## Monitoring
+
+The hypervisor runs **node-exporter as a native Debian package**, not a container — there is no
+Docker on this host and there should not be.
+
+```bash
+apt-get install -y prometheus-node-exporter
+```
+
+It listens on `:9100`, is enabled at boot, and is scraped by Prometheus on the RasPi 5 as job
+`node`, host label `proxmox`. There is no cAdvisor entry for this host because it runs no
+containers.
+
+> Host-level metrics only landed here on 2026-08-10 — before that the hypervisor was the one
+> machine in the lab with no metrics at all, which is why earlier right-sizing reviews had to work
+> from guest data alone. Prometheus retention is 30 days.
 
 ## IOMMU Setup (PCI Passthrough for HBA)
 

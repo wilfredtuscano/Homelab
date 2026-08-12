@@ -7,11 +7,14 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # System metrics from all VMs via Node Exporter
+  # System metrics from all hosts via Node Exporter.
+  # 200 runs the Debian package natively (no Docker on the hypervisor);
+  # the rest run it as part of the monitoring-agent stack.
   - job_name: node
     static_configs:
       - targets:
           - '192.168.1.199:9100'
+          - '192.168.1.200:9100'
           - '192.168.1.202:9100'
           - '192.168.1.203:9100'
           - '192.168.1.204:9100'
@@ -25,6 +28,10 @@ scrape_configs:
         regex: '192\.168\.1\.199'
         target_label: host
         replacement: raspi5
+      - source_labels: [instance]
+        regex: '192\.168\.1\.200'
+        target_label: host
+        replacement: proxmox
       - source_labels: [instance]
         regex: '192\.168\.1\.202'
         target_label: host
@@ -42,7 +49,56 @@ scrape_configs:
         target_label: host
         replacement: jarvis
 
-  # Container metrics from all VMs via cAdvisor
+  # In-guest metrics for TrueNAS over SNMP. This is the only source that can
+  # separate ZFS ARC (reclaimable cache) from real memory use - the pve job
+  # cannot, because ARC always expands to fill the VM's allocation.
+  - job_name: snmp-truenas
+    metrics_path: /snmp
+    params:
+      auth: [truenas_v2]
+      module: [truenas]
+    static_configs:
+      - targets:
+          - '192.168.1.201'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: host
+        replacement: truenas
+      - target_label: __address__
+        replacement: 'snmp-exporter:9116'
+    # The pool/interface name is joined in by the exporter; the raw index
+    # labels add nothing and would split series on renumbering.
+    metric_relabel_configs:
+      - regex: 'zpoolIndex|ifIndex'
+        action: labeldrop
+
+  # Per-guest metrics straight from the Proxmox API via pve-exporter.
+  # This is the only source covering TrueNAS (VM 201), which has no
+  # in-guest exporter. Note the memory figure for a VM with ballooning
+  # off reflects what the host has committed, not what the guest needs -
+  # ZFS ARC inside TrueNAS always expands to fill it.
+  - job_name: pve
+    metrics_path: /pve
+    params:
+      module: [default]
+      cluster: ['1']
+      node: ['1']
+    static_configs:
+      - targets:
+          - '192.168.1.200'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 'pve-exporter:9221'
+
+  # Container metrics via cAdvisor. No entry for 200 - the hypervisor
+  # does not run Docker.
   - job_name: cadvisor
     static_configs:
       - targets:

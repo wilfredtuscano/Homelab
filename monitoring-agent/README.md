@@ -1,6 +1,6 @@
 # Monitoring Agent
 
-A lightweight agent stack deployed on **every VM** to collect logs and metrics. Data is shipped to the central monitoring stack on RasPi5 (192.168.1.199).
+A lightweight agent stack deployed on **every monitored host** — `starr-ct` (202), `plex-ct` (203), `cloud-ct` (204) and `jarvis` (205) — to collect logs and metrics. Data is shipped to the central monitoring stack (Grafana, Prometheus, Loki) on RasPi5 (192.168.1.199), which runs the server side and therefore does not run this agent itself. TrueNAS (201) is not covered.
 
 ## What's inside
 

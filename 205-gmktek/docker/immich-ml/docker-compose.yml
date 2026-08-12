@@ -1,0 +1,40 @@
+services:
+  # Immich machine-learning, offloaded here from cloud-ct (214).
+  #
+  # Why it lives on jarvis: ML is bursty and used to saturate all of cloud-ct's
+  # cores during bulk import and face re-runs, on a host sharing 22 other
+  # containers. jarvis is otherwise idle and has the Strix Halo iGPU.
+  #
+  # Measured on CLIP ViT-B-32 at 8-way concurrency:
+  #   cloud-ct (6 cores, shared)  24.0 img/s
+  #   jarvis   (CPU image)        38.5 img/s
+  #   jarvis   (this, ROCm)       61.9 img/s   <- GPU verified at 64% utilisation
+  #
+  # Single-image latency is ~identical across all three (~0.12s); the win is
+  # throughput under concurrency, which is the case that actually hurt.
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:release-rocm
+    container_name: immich-machine-learning
+    # Strix Halo (gfx1151) works against this image with no HSA_OVERRIDE_GFX_VERSION.
+    # If a future image or driver regresses, check for a SILENT CPU fallback before
+    # anything else - ONNX Runtime does not error when the ROCm provider fails.
+    # Verify with: rocm-smi --showuse during a load test, not from the logs.
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+      - render
+    security_opt:
+      - seccomp=unconfined
+    environment:
+      - TZ=America/Los_Angeles
+    volumes:
+      - immich-ml-cache:/cache
+    ports:
+      # Reachable from cloud-ct on 192.168.1.205:3003 (~11ms on the LAN).
+      - "3003:3003"
+    restart: unless-stopped
+
+volumes:
+  immich-ml-cache:

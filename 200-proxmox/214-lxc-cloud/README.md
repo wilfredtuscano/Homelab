@@ -9,16 +9,25 @@
 
 | Resource | Value |
 |---|---|
-| vCPU | 4 cores |
-| RAM | 8 GB |
+| vCPU | 6 cores |
+| RAM | 12 GB |
 | Swap | 512 MB |
 | Disk | 80 GB (local-nvme — Samsung PM9A1 1TB) |
 
 > Migrated from VM 204 to remove full-OS overhead and put MariaDB / SQLite databases on the fast local NVMe pool.
+>
+> Raised from 4 cores / 8 GB on 2026-08-10. Over the preceding 30 days this CT saturated all 4
+> cores (`immich-server` peaked at 219%, `immich-machine-learning` at 187%) and hit 76% of its RAM
+> with a rising trend of ~0.04 GB/day. Funded by reclaiming 2 GB each from starr-ct and plex-ct, so
+> total host allocation was unchanged.
 
 ## Role
 
-Self-hosted cloud services: password manager, file/photo sync, recipe management.
+Self-hosted cloud services: password manager, photo sync, document management (with local-LLM
+enrichment against Ollama on `jarvis`), recipes, and task management.
+
+> **Densest host in the lab.** 23 containers across 8 stacks. Right-sizing this CT is tracked
+> separately — see [Resource allocation](../README.md#resource-allocation).
 
 ## Setup
 
@@ -46,21 +55,33 @@ lxc.apparmor.profile: unconfined
 | [docker/monitoring-agent/](docker/monitoring-agent/) | Promtail, node-exporter, cAdvisor | 9080 (cadvisor) |
 | [docker/vaultwarden/](docker/vaultwarden/) | VaultWarden | 8082 → 80 |
 | [docker/mealie/](docker/mealie/) | Mealie recipe manager | 9000 |
+| [docker/immich/](docker/immich/) | Immich server, machine-learning, PostgreSQL, Redis | 2283 |
+| [docker/paperless/](docker/paperless/) | Paperless-ngx, PostgreSQL, Redis broker, Gotenberg, Tika, Paperless-AI, Paperless-GPT | 8000 (ngx), 8080 (gpt), 3000 (ai) |
+| [docker/vikunja/](docker/vikunja/) | Vikunja, PostgreSQL | 3456 |
 | [docker/nextcloud/](docker/nextcloud/) | NextCloud, MariaDB, Redis, Collabora | 8443 → 443, 9980 (collabora) |
+
+> **Nextcloud is slated for decommissioning.** Immich now covers photos and Paperless-ngx covers
+> documents, which were the reasons it was kept. The plan is to stop the stack on this CT and
+> retain `docker/nextcloud/` in the repo as reference-only, non-deployed. Not yet actioned — the
+> stack is still running as documented above.
 
 Traefik on 199 routes traffic via file provider — see `199-raspi5/docker/traefik/data/config.yml`.
 
-## NFS Mount
+## NFS Mounts
 
 ```
 192.168.1.201:/mnt/Vault/Nextcloud  /mnt/nfs/nextcloud  nfs  defaults  0  0
+192.168.1.201:/mnt/Vault/Immich     /mnt/nfs/immich     nfs  defaults  0  0
+192.168.1.201:/mnt/Vault/Paperless  /mnt/nfs/paperless  nfs  defaults  0  0
 ```
 
 NFS access requires enabling the `mount` feature in LXC Options → Features in the Proxmox UI.
 
 ## TrueNAS — NFS dataset setup
 
-Only one dataset is needed for NextCloud user data. MariaDB runs on a local bind mount (`./db`) for speed and to avoid SQLite-style file locking issues over NFS.
+One dataset per bulk-data app (Nextcloud, Immich, Paperless). **Databases never live on NFS** —
+MariaDB and the three PostgreSQL instances all use local bind mounts (`./db`) on the NVMe rootfs,
+for speed and to avoid file-locking problems over NFS.
 
 ```bash
 # In TrueNAS Shell — set ownership to uid=1000 (matches cloud user and PUID in compose)

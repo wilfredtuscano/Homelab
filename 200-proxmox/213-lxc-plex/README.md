@@ -9,12 +9,16 @@
 
 | Resource | Value |
 |---|---|
-| vCPU | 6 cores |
-| RAM | 8 GB |
-| Disk | 80 GB (local-zfs) |
+| vCPU | 4 cores |
+| RAM | 6 GB |
+| Swap | 512 MB |
+| Disk | 80 GB (local-nvme — Samsung PM9A1 1TB) |
 | iGPU | Intel Xe (i7-13700K) via `/dev/dri` passthrough |
 
-> Uses 8 GB instead of the previous VM's 16 GB — LXC has no full OS overhead.
+> Reduced from 8 GB to 6 GB on 2026-08-10 — 30 days of data showed a 2.19 GB peak working set.
+> Deliberately **not** cut to 4 GB: page cache counts toward the LXC cgroup limit and Plex averages
+> ~5 GB cached, so a tighter limit would force reclaim during streaming. Cores stay at 4 — the plex
+> container alone peaked at 295% CPU during transcodes.
 > iGPU passthrough works because LXC shares the Proxmox host kernel directly, unlike VMs which require SR-IOV or GVT-g (unsupported on 12th gen+ Intel).
 
 ## Role
@@ -40,6 +44,7 @@ See [guides/lxc-docker.md](../../guides/lxc-docker.md) for the full LXC + Docker
 | [docker/plex/](docker/plex/) | Plex Media Server |
 | [docker/audiobookshelf/](docker/audiobookshelf/) | Audiobookshelf |
 | [docker/calibre-web/](docker/calibre-web/) | Calibre-web |
+| [docker/monitoring-agent/](docker/monitoring-agent/) | Promtail, node-exporter, cAdvisor |
 
 ## NFS Mount
 

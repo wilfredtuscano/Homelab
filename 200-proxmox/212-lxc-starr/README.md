@@ -9,11 +9,15 @@
 
 | Resource | Value |
 |---|---|
-| vCPU | 4 cores |
-| RAM | 8 GB |
+| vCPU | 2 cores |
+| RAM | 6 GB |
 | Swap | 512 MB |
 | Disk | 80 GB (local-nvme — Samsung PM9A1 1TB) |
 | TUN device | `/dev/net/tun` passthrough (for Gluetun WireGuard) |
+
+> Reduced from 4 cores / 8 GB on 2026-08-10 — 30 days of data showed a peak of 1.34 cores and
+> 3.08 GB. If qBittorrent behaviour changes (many simultaneous hash checks), this is the first
+> guest to revisit.
 
 > Migrated from VM 202 to remove the full-OS overhead and stop swap pressure caused by qBittorrent's OS page cache. LXC shares the host kernel, so memory is used directly without VM ballooning.
 
@@ -46,7 +50,7 @@ lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file
 | Folder | Services |
 |---|---|
 | [docker/portainer-agent/](docker/portainer-agent/) | Portainer Edge Agent |
-| [docker/vpn/](docker/vpn/) | Gluetun (Surfshark WireGuard), qBittorrent, Firefox |
+| [docker/vpn/](docker/vpn/) | Gluetun (Surfshark WireGuard), qBittorrent |
 | [docker/starr/](docker/starr/) | Sonarr, Radarr, Prowlarr, Lidarr, Readarr, FlareSolverr, Metube |
 | [docker/monitoring-agent/](docker/monitoring-agent/) | Promtail, node-exporter, cAdvisor |
 
