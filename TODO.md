@@ -60,11 +60,15 @@
 - [ ] **Traefik**: Rename `199-raspi5/docker/traefik/data/` config folder (e.g., to `config/`) to avoid conflict with the global `data/` gitignore rule. Currently worked around with a gitignore override in root `.gitignore`.
 - [ ] **`203-ubuntu-plex/`**: superseded by `213-lxc-plex/` after the VM→LXC migration. Decide
       whether to keep it as historical reference or drop it.
-- [ ] **Audit repo compose files against what is actually deployed.** For every stack on every
-      host, diff the repo `docker-compose.y*ml` (and its config files) against the copy running on
-      the box, and reconcile in whichever direction is correct. The repo is the blueprint but has
-      never been verified as the source of truth. Spot-checked on 2026-08-10: `prometheus.yml`
-      differed only by a trailing newline, which is benign — the rest is unverified.
+- [x] ~~**Audit repo compose files against what is actually deployed.**~~ Done 2026-08-15: 25 stacks
+      diffed, 18 identical, 7 drifting, all reconciled. Found VaultWarden and Mealie with open
+      registration live, and Plex running `privileged: true`. All 25 now identical.
+- [ ] **Audit mounted config files and `.env` structure** — the compose audit did not cover
+      Traefik's `config.yml`, Prometheus, Promtail or Loki configs. `prometheus.yml` was
+      spot-checked (clean); the rest are unverified and a plausible source of drift.
+- [ ] **Standardise on one compose filename.** Every host mixes `docker-compose.yml` and
+      `.yaml` — `dnspi` has one of each. This caused two failed deploys on 2026-08-15. Until it is
+      fixed, any automation must glob `docker-compose.y*ml`.
 
 ## Media
 
