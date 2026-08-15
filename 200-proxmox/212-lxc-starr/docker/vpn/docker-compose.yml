@@ -17,6 +17,8 @@ services:
       - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
       - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
     ports:
+      # Gluetun control server (public IP API, status)
+      - 8000:8000
       # QBT UI Port
       - 8090:8090
       # Bittorrent port
