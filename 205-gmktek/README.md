@@ -82,6 +82,75 @@ Ollama was paperless-gpt; paperless-ai has no LLM configured, and Open WebUI's d
 chats. Anything removed can be re-pulled on demand — `ollama pull` is cheap, 220 GB of stale
 weights is not.
 
+### Building / upgrading Ollama from source
+
+Ollama is built from source against the system ROCm so it uses the gfx1151 iGPU natively. Last
+built **2026-08-15 at `v0.32.13`**.
+
+The build interface changed between 0.30 and 0.32 — the old `cmake --preset 'ROCm 7'` no longer
+exists. Current process:
+
+```bash
+cd ~/ollama-src
+git fetch --tags origin && git checkout v<VERSION>
+
+# Configure. There is a backend matching each ROCm release; pick the one that
+# matches /opt/rocm/.info/version. gfx1151 is Strix Halo.
+export PATH=/opt/rocm/bin:$PATH
+cmake -B build . -DOLLAMA_LLAMA_BACKENDS=rocm_v7_2 -DCMAKE_HIP_ARCHITECTURES=gfx1151 \
+      -DCMAKE_PREFIX_PATH=/opt/rocm
+
+cmake --build build --parallel
+go build -o ollama .
+```
+
+Verify before configuring further: `grep OLLAMA_LLAMA_BACKENDS build/CMakeCache.txt` should show
+`rocm_v7_2`, and `cmake --build build --target help | grep rocm` should list
+`ollama-llama-server-rocm_v7_2`. A configure that silently omits the ROCm backend produces a
+CPU-only build.
+
+Go version is handled automatically — `go.mod` requires a newer Go than the system package, and
+`GOTOOLCHAIN=auto` fetches it into `$GOPATH`. No system Go change is needed.
+
+**Test before installing.** Run the new binary on a spare port against the real model store:
+
+```bash
+cd ~/ollama-src
+OLLAMA_HOST=127.0.0.1:11435 \
+OLLAMA_MODELS=/usr/share/ollama/.ollama/models \
+OLLAMA_LIBRARY_PATH=$HOME/ollama-src/build/lib/ollama ./ollama serve
+# in another shell:
+OLLAMA_HOST=127.0.0.1:11435 ./ollama run qwen2.5-coder:7b "hi"
+OLLAMA_HOST=127.0.0.1:11435 ./ollama ps    # PROCESSOR must read 100% GPU
+```
+
+**Install — stop the service first**, or copying the binary fails with `Text file busy` because the
+running process holds it open:
+
+```bash
+sudo systemctl stop ollama
+sudo rm -rf /usr/local/lib/ollama
+sudo cp -a ~/ollama-src/build/lib/ollama /usr/local/lib/ollama
+sudo cp ~/ollama-src/ollama /usr/local/bin/ollama
+sudo systemctl start ollama
+```
+
+The library layout changed too: 0.30 installed `lib/ollama/rocm/`, 0.32 installs `lib/ollama/`
+plus a `rocm_v7_2/` subdirectory. Replace the whole directory rather than copying over it.
+
+> **Mismatched binary and libraries fall back to CPU silently.** This happened during the 0.32.13
+> upgrade: the library copy succeeded, the binary copy failed with `Text file busy`, and the
+> service restarted clean — `systemctl is-active` said `active` and the API returned HTTP 200
+> while every request ran on CPU. The only signal was the startup log:
+> ```
+> msg="inference compute" id=cpu library=cpu      # BAD - CPU only
+> msg="inference compute" id=0 library=ROCm compute=gfx1151 libdirs=ollama,rocm_v7_2   # GOOD
+> ```
+> After any upgrade, check that line and run an inference confirming `100% GPU`. Service status
+> and API health prove nothing here.
+
+Keep a rollback before upgrading — `cp` the current binary and `/usr/local/lib/ollama` aside first.
+
 ### Ollama is **not** a Docker stack
 
 Ollama runs as a **native systemd service** on port `11434`, built from source against the
