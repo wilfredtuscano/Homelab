@@ -70,9 +70,10 @@
 - [x] ~~**Audit repo compose files against what is actually deployed.**~~ Done 2026-08-15: 25 stacks
       diffed, 18 identical, 7 drifting, all reconciled. Found VaultWarden and Mealie with open
       registration live, and Plex running `privileged: true`. All 25 now identical.
-- [ ] **Audit mounted config files and `.env` structure** — the compose audit did not cover
-      Traefik's `config.yml`, Prometheus, Promtail or Loki configs. `prometheus.yml` was
-      spot-checked (clean); the rest are unverified and a plausible source of drift.
+- [x] ~~**Audit mounted config files and `.env` structure**~~ Done 2026-08-16: 9 of 10 config files
+      identical (one differed by trailing whitespace). Found jarvis had no `AGENT_HOST`, so its logs
+      reached Loki unlabelled and were invisible to `{host="..."}` queries — silently, because
+      promtail was healthy and its Prometheus targets were green. Fixed, `.env.example` added.
 - [ ] **Standardise on one compose filename.** Every host mixes `docker-compose.yml` and
       `.yaml` — `dnspi` has one of each. This caused two failed deploys on 2026-08-15. Until it is
       fixed, any automation must glob `docker-compose.y*ml`.
