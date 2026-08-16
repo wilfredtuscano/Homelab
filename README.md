@@ -12,7 +12,7 @@ ISP Modem
     │   ├── VM:  TrueNAS Core 13   192.168.1.201   → NAS / ZFS Storage
     │   ├── LXC: Starr             192.168.1.202   → *arr apps + VPN downloader
     │   ├── LXC: Plex              192.168.1.203   → Plex (iGPU QuickSync) + Audiobookshelf + Calibre-web
-    │   └── LXC: Cloud             192.168.1.204   → VaultWarden, Mealie, Immich, Paperless-ngx, Vikunja, Nextcloud
+    │   └── LXC: Cloud             192.168.1.204   → VaultWarden, Mealie, Immich, Paperless-ngx, Vikunja
     └── GMKTec Evo-X2       192.168.1.205   → Local AI (Ollama + OpenWebUI)
 ```
 
@@ -25,7 +25,7 @@ ISP Modem
 | TrueNAS Core 13 (VM) | 192.168.1.201 | NAS / ZFS | [200-proxmox/201-truenas/](200-proxmox/201-truenas/) |
 | LXC - Starr | 192.168.1.202 | *arr + VPN downloader | [200-proxmox/212-lxc-starr/](200-proxmox/212-lxc-starr/) |
 | LXC - Plex | 192.168.1.203 | Plex + Audiobookshelf + Calibre-web | [200-proxmox/213-lxc-plex/](200-proxmox/213-lxc-plex/) |
-| LXC - Cloud | 192.168.1.204 | VaultWarden, Mealie, Immich, Paperless-ngx, Vikunja, Nextcloud | [200-proxmox/214-lxc-cloud/](200-proxmox/214-lxc-cloud/) |
+| LXC - Cloud | 192.168.1.204 | VaultWarden, Mealie, Immich, Paperless-ngx, Vikunja | [200-proxmox/214-lxc-cloud/](200-proxmox/214-lxc-cloud/) |
 | GMKTec Evo-X2 | 192.168.1.205 | Ollama (native) / OpenWebUI | [205-gmktek/](205-gmktek/) |
 
 > Every host except TrueNAS also runs a monitoring agent (Promtail, node-exporter, cAdvisor) and a

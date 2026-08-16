@@ -1,3 +1,13 @@
+# ============================================================================
+# DECOMMISSIONED 2026-08-16 - THIS STACK IS NOT DEPLOYED ANYWHERE.
+#
+# Retained for reference only. Immich covers photos, Paperless-ngx covers
+# documents, and the Deck boards (the only real data in here) were migrated to
+# Vikunja before removal. See README.md for the usage audit and what was kept.
+#
+# Do not bring this up without reading the README - a full backup of the
+# database and user files lives at ~/nextcloud-decom-20260816/ on cloud-ct.
+# ============================================================================
 services:
   nextcloud:
     # Pinned intentionally — bump deliberately, see README "Upgrading Nextcloud".

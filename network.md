@@ -45,13 +45,11 @@ resolves to **192.168.1.199** and Traefik routes it onward. The older `*.home` n
 | `immich` | Immich (204:2283) |
 | `paperless` | Paperless-ngx (204:8000) |
 | `vikunja` | Vikunja (204:3456) |
-| `nextcloud` | Nextcloud (204:8443) |
-| `collabora` | Collabora (204:9980) |
 | `chat` | OpenWebUI (205:3000) |
 | `ollama` | Ollama API (205:11434) |
 
-> The Traefik file provider still carries a `firefox.local.wilfredtuscano.com` router, but the
-> Firefox container was dropped in PR #14. That route is dead and should be removed.
+> Dead routes for `firefox`, `nextcloud` and `collabora` were removed from the Traefik file
+> provider on 2026-08-16.
 
 ## Remote Access (Tailscale)
 
@@ -95,9 +93,7 @@ day-to-day access; these are the direct backends.
 | 192.168.1.204 | 8000 | Paperless-ngx |
 | 192.168.1.204 | 8080 | Paperless-GPT |
 | 192.168.1.204 | 8082 | VaultWarden |
-| 192.168.1.204 | 8443 | Nextcloud |
 | 192.168.1.204 | 9000 | Mealie |
-| 192.168.1.204 | 9980 | Collabora |
 | 192.168.1.205 | 3000 | OpenWebUI |
 | 192.168.1.205 | 11434 | Ollama API (native systemd service, not Docker) |
 | .199 / .202 / .203 / .204 / .205 | 9080 | cAdvisor (monitoring agent, all hosts) |

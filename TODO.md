@@ -2,10 +2,17 @@
 
 ## Infrastructure
 
-- [ ] **Decommission Nextcloud** (`214-lxc-cloud`): Immich covers photos and Paperless-ngx covers
-      documents, so Nextcloud + MariaDB + Redis + Collabora are redundant. Stop and remove the
-      stack from cloud-ct, keep `docker/nextcloud/` in the repo as reference-only / non-deployed.
-      Frees the largest single block of RAM on the densest CT.
+- [x] ~~**Decommission Nextcloud**~~ Done 2026-08-16. A usage audit found ~23 MB of live user data
+      (the 12 GB on disk was preview cache and trash), 0 notes, 6 calendar events, 6 contacts —
+      but active Deck (kanban) content, which was migrated into Vikunja first. All four
+      containers removed, Traefik routes and cron cleared, `docker/nextcloud/` retained in the repo
+      as reference-only. Backup at `~/nextcloud-decom-20260816/` on cloud-ct.
+- [ ] **Decide the fate of `/mnt/nfs/nextcloud`** (TrueNAS `Vault/Nextcloud`). Left untouched at
+      decommission — the mount is still in fstab. Delete the dataset, or keep it as cold storage.
+- [ ] **Confirm nothing was syncing calendar/contacts.** Both users logged in 2026-08-14 with no
+      content changes since April, which is the signature of a client polling — most likely
+      CalDAV/CardDAV from a phone. Data is safe in the backup, but if a phone was syncing contacts
+      through Nextcloud it will now silently fail.
 - [x] ~~**Right-size LXC resources**~~ Done 2026-08-10 from 30 days of data: starr 8→6 GB / 4→2
       cores, plex 8→6 GB, cloud 8→12 GB / 4→6 cores. Total allocation unchanged at 48 GB. The
       80→40 GB disk shrink is cancelled permanently — the pool is 4% full.
