@@ -63,15 +63,6 @@ http:
         - https-redirectscheme
       tls: {}
       service: qbittorrent
-    firefox:
-      entryPoints:
-        - "https"
-      rule: "Host(`firefox.local.wilfredtuscano.com`)"
-      middlewares:
-        - default-headers
-        - https-redirectscheme
-      tls: {}
-      service: firefox
     prowlarr:
       entryPoints:
         - "https"
@@ -171,24 +162,6 @@ http:
         - https-redirectscheme
       tls: {}
       service: vaultwarden
-    nextcloud:
-      entryPoints:
-        - "https"
-      rule: "Host(`nextcloud.local.wilfredtuscano.com`)"
-      middlewares:
-        - default-headers
-        - https-redirectscheme
-      tls: {}
-      service: nextcloud
-    collabora:
-      entryPoints:
-        - "https"
-      rule: "Host(`collabora.local.wilfredtuscano.com`)"
-      middlewares:
-        - default-headers
-        - https-redirectscheme
-      tls: {}
-      service: collabora
     immich:
       entryPoints:
         - "https"
@@ -289,11 +262,6 @@ http:
         servers:
           - url: "http://192.168.1.202:8090/"
         passHostHeader: true
-    firefox:
-      loadBalancer:
-        servers:
-          - url: "https://192.168.1.202:3001/"
-        passHostHeader: true
     prowlarr:
       loadBalancer:
         servers:
@@ -348,16 +316,6 @@ http:
       loadBalancer:
         servers:
           - url: "http://192.168.1.204:8082/"
-        passHostHeader: true
-    nextcloud:
-      loadBalancer:
-        servers:
-          - url: "https://192.168.1.204:8443/"
-        passHostHeader: true
-    collabora:
-      loadBalancer:
-        servers:
-          - url: "http://192.168.1.204:9980/"
         passHostHeader: true
     immich:
       loadBalancer:

@@ -38,7 +38,7 @@ Hypervisor hosting all VMs and LXCs. HBA controller is passed through to TrueNAS
 | TrueNAS Core 13 (VM) | 201 | 192.168.1.201 | NAS / ZFS storage | [201-truenas/](201-truenas/) |
 | LXC - Starr | 212 | 192.168.1.202 | *arr apps + VPN downloader (Gluetun + qBittorrent) | [212-lxc-starr/](212-lxc-starr/) |
 | LXC - Plex | 213 | 192.168.1.203 | Plex + iGPU QuickSync, Audiobookshelf, Calibre-web | [213-lxc-plex/](213-lxc-plex/) |
-| LXC - Cloud | 214 | 192.168.1.204 | VaultWarden, Mealie, Immich, Paperless-ngx, Vikunja, Nextcloud | [214-lxc-cloud/](214-lxc-cloud/) |
+| LXC - Cloud | 214 | 192.168.1.204 | VaultWarden, Mealie, Immich, Paperless-ngx, Vikunja | [214-lxc-cloud/](214-lxc-cloud/) |
 
 ## Resource allocation
 

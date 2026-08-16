@@ -1,9 +1,8 @@
 # Vikunja
 
-Self-hosted project & task manager for `~/workspace` — the single place that tracks
-projects, tasks, and timelines across Study, Fitness, JobSearch, personal projects,
-Starr/media chores, etc. Designed to be **driven programmatically**: Claude Code,
-launched from `~/workspace`, manages the whole workflow through an MCP server that
+Self-hosted project & task manager — one board per project, tracking tasks and
+timelines across everything managed from the personal hub. Designed to be
+**driven programmatically**: Claude Code manages the whole workflow through an MCP server that
 talks to Vikunja's REST API.
 
 ## Services
