@@ -51,11 +51,22 @@ users with the CLI instead of the signup page:
 
 ```bash
 # The binary lives at /app/vikunja/vikunja (it is not on $PATH inside the image).
-docker compose exec -T vikunja /app/vikunja/vikunja user create -u wilfred -e wilfredtuscano@gmail.com -p '<password>'
-# Change a password later: … /app/vikunja/vikunja user change-password -u wilfred
+docker compose exec -T vikunja /app/vikunja/vikunja user create -u <user> -e <email> -p '<password>'
+
+# Reset a password later. Takes the USER ID positionally, not a username, and --direct is
+# required because the default path mails a reset link and the mailer is disabled here.
+# Omit -p so it prompts, keeping the password out of shell history.
+docker compose exec vikunja /app/vikunja/vikunja user reset-password <id> --direct
+
+# `vikunja user list` shows the ids.
 ```
 
 Use the **same username as the Nextcloud / Immich / Paperless accounts** for consistency.
+
+> **There is no mailer configured**, so "Forgot your password" on the login page can never work.
+> It accepts the request and has nowhere to send it. The CLI above is the only reset path. A wrong
+> password returns HTTP **403** with `"code":1011`, which reads like a permissions problem and is
+> not one.
 
 ## API token for automation (MCP)
 
@@ -78,6 +89,10 @@ claude mcp add vikunja --scope user \
   -- npx -y @democratize-technology/vikunja-mcp
 ```
 
+- **API version** - the MCP is configured against `/api/v1`, which 2.x still serves as a
+  compatibility shim while the web UI calls `/api/v2`. v1 works today, long-lived `tk_` tokens
+  included, but it is the thing most likely to disappear in a future major. If MCP calls start
+  failing after an upgrade, check this first.
 - **URL** — the Traefik hostname is used (valid Let's Encrypt `*.local.wilfredtuscano.com`
   cert, so Node trusts it without extra flags; survives an IP change). The direct
   `http://192.168.1.204:3456/api/v1` is a fine fallback if DNS/Traefik is down.
@@ -90,14 +105,23 @@ Restart Claude after registering; projects/tasks/labels/dates then become native
 
 ## Upgrading
 
-Pin `vikunja` to a specific tag after first boot, then bump deliberately:
+`vikunja` is pinned to `2.7.0`. **Do not put it back on `latest`.** It was unpinned until
+2026-10-13, and in that time a `latest` pull carried the stack from 0.24.x to 2.7.0 with no prompt
+and no record: a major version jump that moved the API to `/api/v2` and renamed CLI subcommands.
+The `db` service is on `postgres:16`, which holds the major and still picks up 16.x patches.
+
+To bump, read the upstream release notes first, then:
 
 ```bash
 cd ~/docker/vikunja
-# Edit docker-compose.yml — change `:latest` to e.g. `:0.24.6`
+# Edit docker-compose.yml, changing the tag to the version you intend
 docker compose pull
 docker compose up -d
+docker compose logs -f vikunja   # confirm migrations ran and the version is what you expect
 ```
+
+Migrations run automatically on boot and are not reversible, so **back up the database before a
+major bump**. Rolling the tag back does not roll the schema back.
 
 ## Notes
 

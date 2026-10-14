@@ -2,8 +2,10 @@ services:
   # Vikunja — self-hosted project/task manager. Single image bundles API + web UI.
   # Driven programmatically from ~/workspace via an MCP server (see README).
   vikunja:
-    # Movable tag on first deploy; pin to a version after first boot (see README).
-    image: vikunja/vikunja:latest
+    # PINNED, and it needs to stay pinned. While this was `latest` the stack moved itself from
+    # 0.24.x to 2.7.0 on 2026-10-03, a major jump that changed the API to /api/v2 and renamed
+    # CLI subcommands. Bump deliberately; see Upgrading in the README.
+    image: vikunja/vikunja:2.7.0
     container_name: vikunja
     security_opt:
       - apparmor=unconfined
