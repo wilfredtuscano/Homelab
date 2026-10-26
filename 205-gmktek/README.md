@@ -37,24 +37,28 @@ Local AI inference server running Ollama with OpenWebUI as a frontend. Strix Hal
 ### Routine maintenance
 
 `scripts/stack-update` is the standard routine: `apt-get update`, `apt-get --with-new-pkgs upgrade`,
-then `docker compose pull && up -d` across every stack, then an image prune. It reports a pending
-reboot but never takes one.
+then `docker compose pull && up -d` across every stack (`.yml` and `.yaml` alike), then an image
+prune. It reports a pending reboot but never takes one.
 
 Note `--with-new-pkgs`: it makes `apt-get` behave like `apt upgrade`. Plain `apt-get upgrade`
 refuses to pull in new dependencies and silently holds those packages back instead.
 
-Two things this host must **not** do unattended:
+Things this host must **not** do unattended:
 
-- **`apt full-upgrade` / `dist-upgrade`** — the ROCm packages (`hipcc`, `rocm-cmake`, `rocminfo`)
-  are held back deliberately and a full upgrade may not respect that. ROCm is load-bearing for
-  Ollama here.
-- **`apt autoremove`** — currently proposes removing `amdgpu-dkms-firmware`.
+- **Upgrade the GPU stack.** About 65 ROCm/HIP/amdgpu packages are installed. Nothing is
+  `apt-mark hold`, so instead `stack-update` simulates the upgrade first and, if any of those
+  packages is pending, skips the apt step for that run and reports it. Run that upgrade by hand,
+  supervised. Two things limit the risk anyway: ROCm comes from the version-pinned
+  `repo.radeon.com/rocm/apt/7.2` source, so only 7.2.x point releases can arrive, and Ollama ships
+  its own ROCm runtime under `/usr/local/lib/ollama/`.
+- **`apt full-upgrade` / `dist-upgrade`** - may remove or replace packages.
+- **`apt autoremove`** - currently proposes removing `amdgpu-dkms-firmware`.
 
 ### Kernel track
 
 jarvis boots the **OEM kernel** (`linux-oem-24.04`, 6.17.x), which is what carries Strix Halo
 support; `amdgpu` is in-tree there, not DKMS. The generic track (`linux-generic`, 6.8.x) is
-installed but never booted — it predates usable gfx1151 support, so it is not a real fallback. It
+installed but never booted: it predates usable gfx1151 support, so it is not a real fallback. It
 should be removed, because it pulls kernel updates that are never used and raises spurious
 `/var/run/reboot-required` flags, which matters for any automation that acts on that flag.
 

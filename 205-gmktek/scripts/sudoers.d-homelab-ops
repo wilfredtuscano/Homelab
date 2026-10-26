@@ -1,4 +1,4 @@
-# /etc/sudoers.d/homelab-ops — jarvis (205)
+# /etc/sudoers.d/homelab-ops - jarvis (205)
 #
 # Install as root:root 0440. ALWAYS validate before installing:
 #   sudo visudo -cf <this file>

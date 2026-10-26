@@ -2,7 +2,7 @@
 
 How automated operators get exactly the privileges they need on a host, and no more.
 
-Applies to any non-human identity that logs in over SSH to run maintenance — a scheduled job,
+Applies to any non-human identity that logs in over SSH to run maintenance - a scheduled job,
 a script on a workstation, or an AI coding agent driving the lab.
 
 ## The problem with the obvious approaches
@@ -44,16 +44,23 @@ Cmnd_Alias STACK_UPDATE = /usr/local/sbin/stack-update
 homelab-ops ALL=(root) NOPASSWD: STACK_UPDATE
 ```
 
-The agent can now perform the whole routine — including operations that are individually
-root-equivalent, like `docker compose up -d` — while being unable to do anything else with them.
+The agent can now perform the whole routine - including operations that are individually
+root-equivalent, like `docker compose up -d` - while being unable to do anything else with them.
 
 The property that matters:
 
-> **Widening what the agent can do requires a human to edit a root-owned file.** The agent cannot
-> grant itself more, regardless of what it is asked to do or what ends up in its context.
+> **Widening what the agent can do requires a human to edit a file the agent cannot write.** The
+> agent cannot grant itself more, regardless of what it is asked to do or what ends up in its
+> context.
+
+That covers more than the script. A routine that runs `docker compose up -d` does whatever the
+compose files and `.env` beside them say, so **every file the routine reads is part of the grant**.
+If the agent can write a compose file, it can add a privileged container and the pinned sudo rule
+means nothing. Those files do not have to be root-owned, but the agent's account must not be able
+to modify them: not their owner, not in their group, no ACL entry.
 
 The cost is rigidity: novel situations fall outside the script. That is the intended trade. Novel
-work is supervised work — a human runs it, or extends the script deliberately.
+work is supervised work - a human runs it, or extends the script deliberately.
 
 ## Keep the scripts in version control
 
@@ -71,7 +78,7 @@ ssh <host> 'sudo install -o root -g root -m 0755 /srv/staging/stack-update /usr/
 
 ## What does not need sudo
 
-Read-only operations usually have a non-root path. Prefer it — an unprivileged capability cannot
+Read-only operations usually have a non-root path. Prefer it - an unprivileged capability cannot
 be abused into a privileged one.
 
 | Need | Do NOT grant | Use instead |
@@ -89,7 +96,7 @@ sudo useradd --create-home --shell /bin/bash --uid 3101 --user-group homelab-ops
 sudo passwd --lock homelab-ops
 sudo usermod --append --groups systemd-journal homelab-ops
 
-# Its own key — never reuse a human's
+# Its own key - never reuse a human's
 sudo install -d -o homelab-ops -g homelab-ops -m 0700 /home/homelab-ops/.ssh
 ```
 
@@ -123,6 +130,9 @@ sudo -n /bin/bash                        # expected: refused
 sudo -n apt-get install anything         # expected: refused
 sudo -n systemctl restart docker         # expected: refused
 sudo -l                                  # review the full effective grant
+
+# and nothing the routine reads is writable by the agent
+find /home/<login>/docker -writable      # expected: no output
 ```
 
 A rule that grants more than intended usually looks correct until enumerated with `sudo -l`.

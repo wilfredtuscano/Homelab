@@ -1,5 +1,5 @@
 #!/bin/bash
-# /usr/local/sbin/stack-update — jarvis (205, GMKTec Evo-X2)
+# /usr/local/sbin/stack-update - jarvis (205, GMKTec Evo-X2)
 #
 # The standard host maintenance routine, expressed as a fixed script so it can
 # be granted through sudo WITHOUT granting docker or apt themselves.
@@ -7,17 +7,23 @@
 # Why a wrapper at all: `docker compose up -d` can create a container that
 # bind-mounts / into itself, so any grant of general Docker access is a grant of
 # root. Pinning the routine to a root-owned script that takes no arguments is
-# what makes the sudo rule meaningful — see ../../guides/agent-access.md.
+# what makes the sudo rule meaningful - see ../../guides/agent-access.md.
 #
 # Deliberately NOT done here:
-#   apt full-upgrade / dist-upgrade  ROCm packages are held back on purpose
+#   apt full-upgrade / dist-upgrade  may remove or replace packages
 #   apt autoremove                   wants to remove amdgpu-dkms-firmware
+#   GPU stack upgrades               skipped when pending, see GPU_PKGS below
 #   reboot                           reported, never taken automatically
 #
 # Invoked by: homelab-ops, via /etc/sudoers.d/homelab-ops
 set -euo pipefail
 
 DOCKER_ROOT=/home/jarvis/docker
+
+# ROCm / HIP / amdgpu packages. If an upgrade would touch any of them, the apt
+# step is skipped for this run so the GPU stack only ever changes under
+# supervision. Matching by prefix avoids a hand-kept hold list of ~65 packages.
+GPU_PKGS='^(amdgpu|comgr|hip|hsa|libamd-comgr|libamdhip|libdrm-amdgpu|libdrm2-amdgpu|libhsa|libhsakmt|miopen|rocblas|rocm)'
 
 log() { printf '[%s] %s\n' "$(date -Is)" "$*"; }
 
@@ -27,12 +33,23 @@ apt-get update
 # --with-new-pkgs matches what `apt upgrade` does. Plain `apt-get upgrade`
 # refuses to pull in new dependencies and silently holds those packages back
 # instead, so the two are not interchangeable.
-log "apt: upgrading"
-DEBIAN_FRONTEND=noninteractive apt-get -y --with-new-pkgs upgrade
+pending_gpu=$(apt-get -s --with-new-pkgs upgrade | awk '/^Inst /{print $2}' | grep -E "$GPU_PKGS" || true)
+
+if [ -n "$pending_gpu" ]; then
+  log "apt: SKIPPED - GPU stack packages pending: $(tr '\n' ' ' <<<"$pending_gpu")"
+  log "  run the upgrade by hand, supervised: sudo apt-get --with-new-pkgs upgrade"
+else
+  log "apt: upgrading"
+  DEBIAN_FRONTEND=noninteractive apt-get -y --with-new-pkgs upgrade
+fi
 
 log "docker: pull + recreate stacks under ${DOCKER_ROOT}"
+# Hosts mix .yml and .yaml, so accept every name `docker compose` discovers
+# by itself. Checking only docker-compose.yml silently skips half the stacks.
+shopt -s nullglob
 for d in "${DOCKER_ROOT}"/*/; do
-  [ -f "${d}docker-compose.yml" ] || continue
+  files=("${d}"compose.y*ml "${d}"docker-compose.y*ml)
+  [ "${#files[@]}" -gt 0 ] || continue
   log "--- $(basename "$d") ---"
   ( cd "$d" && docker compose pull && docker compose up -d )
 done
@@ -42,7 +59,7 @@ docker image prune -f
 
 if [ -f /var/run/reboot-required ]; then
   log "REBOOT REQUIRED for: $(tr '\n' ' ' < /var/run/reboot-required.pkgs 2>/dev/null)"
-  log "  (not rebooting automatically — run: sudo systemctl reboot)"
+  log "  (not rebooting automatically - run: sudo systemctl reboot)"
 fi
 
 log "stack-update complete"
