@@ -1,0 +1,48 @@
+#!/bin/bash
+# /usr/local/sbin/stack-update — jarvis (205, GMKTec Evo-X2)
+#
+# The standard host maintenance routine, expressed as a fixed script so it can
+# be granted through sudo WITHOUT granting docker or apt themselves.
+#
+# Why a wrapper at all: `docker compose up -d` can create a container that
+# bind-mounts / into itself, so any grant of general Docker access is a grant of
+# root. Pinning the routine to a root-owned script that takes no arguments is
+# what makes the sudo rule meaningful — see ../../guides/agent-access.md.
+#
+# Deliberately NOT done here:
+#   apt full-upgrade / dist-upgrade  ROCm packages are held back on purpose
+#   apt autoremove                   wants to remove amdgpu-dkms-firmware
+#   reboot                           reported, never taken automatically
+#
+# Invoked by: homelab-ops, via /etc/sudoers.d/homelab-ops
+set -euo pipefail
+
+DOCKER_ROOT=/home/jarvis/docker
+
+log() { printf '[%s] %s\n' "$(date -Is)" "$*"; }
+
+log "apt: refreshing package index"
+apt-get update
+
+# --with-new-pkgs matches what `apt upgrade` does. Plain `apt-get upgrade`
+# refuses to pull in new dependencies and silently holds those packages back
+# instead, so the two are not interchangeable.
+log "apt: upgrading"
+DEBIAN_FRONTEND=noninteractive apt-get -y --with-new-pkgs upgrade
+
+log "docker: pull + recreate stacks under ${DOCKER_ROOT}"
+for d in "${DOCKER_ROOT}"/*/; do
+  [ -f "${d}docker-compose.yml" ] || continue
+  log "--- $(basename "$d") ---"
+  ( cd "$d" && docker compose pull && docker compose up -d )
+done
+
+log "docker: pruning dangling images"
+docker image prune -f
+
+if [ -f /var/run/reboot-required ]; then
+  log "REBOOT REQUIRED for: $(tr '\n' ' ' < /var/run/reboot-required.pkgs 2>/dev/null)"
+  log "  (not rebooting automatically — run: sudo systemctl reboot)"
+fi
+
+log "stack-update complete"

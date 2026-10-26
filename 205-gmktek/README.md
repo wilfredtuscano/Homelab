@@ -34,6 +34,45 @@ Local AI inference server running Ollama with OpenWebUI as a frontend. Strix Hal
 
 - [BIOS update procedure](bios-update.md) — how to flash AMI BIOS via Hiren's BootCD PE WinPE
 
+### Routine maintenance
+
+`scripts/stack-update` is the standard routine: `apt-get update`, `apt-get --with-new-pkgs upgrade`,
+then `docker compose pull && up -d` across every stack, then an image prune. It reports a pending
+reboot but never takes one.
+
+Note `--with-new-pkgs`: it makes `apt-get` behave like `apt upgrade`. Plain `apt-get upgrade`
+refuses to pull in new dependencies and silently holds those packages back instead.
+
+Two things this host must **not** do unattended:
+
+- **`apt full-upgrade` / `dist-upgrade`** — the ROCm packages (`hipcc`, `rocm-cmake`, `rocminfo`)
+  are held back deliberately and a full upgrade may not respect that. ROCm is load-bearing for
+  Ollama here.
+- **`apt autoremove`** — currently proposes removing `amdgpu-dkms-firmware`.
+
+### Kernel track
+
+jarvis boots the **OEM kernel** (`linux-oem-24.04`, 6.17.x), which is what carries Strix Halo
+support; `amdgpu` is in-tree there, not DKMS. The generic track (`linux-generic`, 6.8.x) is
+installed but never booted — it predates usable gfx1151 support, so it is not a real fallback. It
+should be removed, because it pulls kernel updates that are never used and raises spurious
+`/var/run/reboot-required` flags, which matters for any automation that acts on that flag.
+
+## Agent access
+
+Automation reaches this host as `homelab-ops` (uid 3101), not as the `jarvis` login user, and gets
+a pinned command list rather than blanket sudo. Files live in [`scripts/`](scripts/); the reasoning
+and the general pattern are in [guides/agent-access.md](../guides/agent-access.md).
+
+| File | Installs to |
+|---|---|
+| [`scripts/stack-update`](scripts/stack-update) | `/usr/local/sbin/stack-update`, `root:root 0755` |
+| [`scripts/sudoers.d-homelab-ops`](scripts/sudoers.d-homelab-ops) | `/etc/sudoers.d/homelab-ops`, `root:root 0440` |
+
+The grant is `stack-update`, start/stop/restart of `ollama.service` plus `daemon-reload`, and
+`systemctl reboot`. Deliberately **not** granted: the docker group (the socket is root-equivalent),
+and any command taking a free-form argument vector.
+
 ## Docker Stacks
 
 | Folder | Services |
