@@ -30,18 +30,29 @@ Exposes per-container resource metrics. While Node Exporter tells you "the VM is
 
 1. Copy this folder to `~/docker/monitoring-agent/` on the VM
 
-2. Create a `.env` file (gitignored):
+2. Create a `.env` file (gitignored) by copying [`.env.example`](.env.example):
    ```
    AGENT_HOST=<hostname>
    ```
 
-   | VM | AGENT_HOST |
+   | Host | AGENT_HOST |
    |----|------------|
-   | RasPi5 (192.168.1.199) | `raspi5` |
    | Starr (192.168.1.202) | `starr` |
    | Plex (192.168.1.203) | `plex` |
    | Cloud (192.168.1.204) | `cloud` |
    | Jarvis (192.168.1.205) | `jarvis` |
+
+   > RasPi5 (199) is **not** in this list: it runs the monitoring *server*, not the agent.
+
+   > **This step fails silently if skipped.** With no `.env`, docker compose substitutes an empty
+   > string without warning, promtail starts and reports healthy, and the host's logs arrive in Loki
+   > with an empty `host` label, invisible to any `{host="..."}` query. Nothing surfaces an error.
+   > Jarvis ran this way until 2026-08-16. Always verify after deploying:
+   >
+   > ```bash
+   > docker inspect promtail --format '{{range .Config.Env}}{{println .}}{{end}}' | grep AGENT_HOST
+   > curl -s http://192.168.1.199:3100/loki/api/v1/label/host/values   # host must appear here
+   > ```
 
 3. Start the stack:
    ```bash

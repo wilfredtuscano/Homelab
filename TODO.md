@@ -7,12 +7,13 @@
       but active Deck (kanban) content, which was migrated into Vikunja first. All four
       containers removed, Traefik routes and cron cleared, `docker/nextcloud/` retained in the repo
       as reference-only. Backup at `~/nextcloud-decom-20260816/` on cloud-ct.
-- [ ] **Decide the fate of `/mnt/nfs/nextcloud`** (TrueNAS `Vault/Nextcloud`). Left untouched at
-      decommission — the mount is still in fstab. Delete the dataset, or keep it as cold storage.
-- [ ] **Confirm nothing was syncing calendar/contacts.** Both users logged in 2026-08-14 with no
-      content changes since April, which is the signature of a client polling — most likely
-      CalDAV/CardDAV from a phone. Data is safe in the backup, but if a phone was syncing contacts
-      through Nextcloud it will now silently fail.
+- [ ] **Delete `/mnt/nfs/nextcloud`** (TrueNAS `Vault/Nextcloud`, 12 GB): **not before 2026-08-30**,
+      a two-week cooling-off after decommissioning. Of the 12 GB, ~23 MB is real user data and it is
+      already in the backup at `~/nextcloud-decom-20260816/` on cloud-ct. Also remove the fstab line
+      and update the NFS Mounts section below. Consider copying the backup off cloud-ct first so the
+      only remaining copy is not on the same host.
+- [x] ~~**Confirm nothing was syncing calendar/contacts.**~~ Confirmed unused 2026-08-16: CalDAV
+      was never in use, so the login activity was something else benign. Risk closed.
 - [x] ~~**Right-size LXC resources**~~ Done 2026-08-10 from 30 days of data: starr 8→6 GB / 4→2
       cores, plex 8→6 GB, cloud 8→12 GB / 4→6 cores. Total allocation unchanged at 48 GB. The
       80→40 GB disk shrink is cancelled permanently — the pool is 4% full.
@@ -70,9 +71,10 @@
 - [x] ~~**Audit repo compose files against what is actually deployed.**~~ Done 2026-08-15: 25 stacks
       diffed, 18 identical, 7 drifting, all reconciled. Found VaultWarden and Mealie with open
       registration live, and Plex running `privileged: true`. All 25 now identical.
-- [ ] **Audit mounted config files and `.env` structure** — the compose audit did not cover
-      Traefik's `config.yml`, Prometheus, Promtail or Loki configs. `prometheus.yml` was
-      spot-checked (clean); the rest are unverified and a plausible source of drift.
+- [x] ~~**Audit mounted config files and `.env` structure**~~ Done 2026-08-16: 9 of 10 config files
+      identical (one differed by trailing whitespace). Found jarvis had no `AGENT_HOST`, so its logs
+      reached Loki unlabelled and were invisible to `{host="..."}` queries, silently, because
+      promtail was healthy and its Prometheus targets were green. Fixed, `.env.example` added.
 - [ ] **Standardise on one compose filename.** Every host mixes `docker-compose.yml` and
       `.yaml` — `dnspi` has one of each. This caused two failed deploys on 2026-08-15. Until it is
       fixed, any automation must glob `docker-compose.y*ml`.
