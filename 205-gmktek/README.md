@@ -73,6 +73,11 @@ and the general pattern are in [guides/agent-access.md](../guides/agent-access.m
 | [`scripts/stack-update`](scripts/stack-update) | `/usr/local/sbin/stack-update`, `root:root 0755` |
 | [`scripts/sudoers.d-homelab-ops`](scripts/sudoers.d-homelab-ops) | `/etc/sudoers.d/homelab-ops`, `root:root 0440` |
 
+To install or update, copy `scripts/` plus the agent's public key (as `homelab-ops.pub`) to a
+staging directory on the host and run `sudo ./install-agent-access` there. It validates the
+sudoers file before installing it, keeps an existing account and key, and prints the effective
+grant at the end.
+
 The grant is `stack-update`, start/stop/restart of `ollama.service` plus `daemon-reload`, and
 `systemctl reboot`. Deliberately **not** granted: the docker group (the socket is root-equivalent),
 and any command taking a free-form argument vector.
