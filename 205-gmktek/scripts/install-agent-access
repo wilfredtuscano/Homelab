@@ -1,0 +1,46 @@
+#!/bin/bash
+# install-agent-access - jarvis (205)
+#
+# Installs or updates the homelab-ops agent identity from a staging directory
+# holding this script, stack-update, sudoers.d-homelab-ops and homelab-ops.pub.
+# Safe to re-run: existing account and key are kept, files are reinstalled.
+#
+# Run as a human, from the staging directory:
+#   sudo ./install-agent-access
+#
+# The sudoers file is validated BEFORE it is installed, and the full sudoers
+# config again after, so a bad file never reaches /etc/sudoers.d.
+# See ../../guides/agent-access.md.
+set -euo pipefail
+
+AGENT=homelab-ops
+AGENT_UID=3101
+ALLOW_FROM=192.168.1.0/24
+
+cd "$(dirname "$0")"
+[ "$(id -u)" -eq 0 ] || { echo "run with sudo" >&2; exit 1; }
+for f in stack-update sudoers.d-homelab-ops "${AGENT}.pub"; do
+  [ -f "$f" ] || { echo "missing $f in $(pwd)" >&2; exit 1; }
+done
+
+visudo -cf sudoers.d-homelab-ops
+
+if ! id "$AGENT" >/dev/null 2>&1; then
+  useradd --create-home --shell /bin/bash --uid "$AGENT_UID" --user-group "$AGENT"
+fi
+passwd --lock "$AGENT" >/dev/null
+usermod --append --groups systemd-journal "$AGENT"
+
+install -d -o "$AGENT" -g "$AGENT" -m 0700 "/home/${AGENT}/.ssh"
+key=$(head -1 "${AGENT}.pub")
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+printf 'from="%s",no-agent-forwarding,no-port-forwarding,no-X11-forwarding %s\n' "$ALLOW_FROM" "$key" > "$tmp"
+install -o "$AGENT" -g "$AGENT" -m 0600 "$tmp" "/home/${AGENT}/.ssh/authorized_keys"
+
+install -o root -g root -m 0755 stack-update /usr/local/sbin/stack-update
+install -o root -g root -m 0440 sudoers.d-homelab-ops /etc/sudoers.d/homelab-ops
+visudo -c
+
+echo "installed. effective grant:"
+sudo -l -U "$AGENT"

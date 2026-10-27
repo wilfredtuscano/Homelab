@@ -1,0 +1,36 @@
+# /etc/sudoers.d/homelab-ops - jarvis (205)
+#
+# Install as root:root 0440. ALWAYS validate before installing:
+#   sudo visudo -cf <this file>
+#
+# Design rules (see ../../guides/agent-access.md):
+#   - No NOPASSWD: ALL, ever.
+#   - Every entry is an absolute path with a fully pinned argument vector.
+#     A trailing wildcard would let the agent pass its own arguments, and for
+#     several binaries that is a root shell:
+#       apt-get -o APT::Update::Pre-Invoke::=/bin/sh update
+#       systemctl --root=/ ...
+#   - No docker group. The docker socket is root-equivalent, so membership
+#     would undo everything below. Docker work goes through stack-update.
+#   - Read-only operations are NOT here. `systemctl status` works unprivileged
+#     and log reads come from the systemd-journal group, so neither needs sudo.
+
+Defaults:homelab-ops env_reset
+Defaults:homelab-ops secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# The standard maintenance routine: apt upgrade + compose pull/up + image prune.
+# Takes no arguments by design.
+Cmnd_Alias STACK_UPDATE = /usr/local/sbin/stack-update
+
+# Ollama is a native systemd service here, not a container, so stack-update
+# does not cover it. Exact unit name, no wildcard.
+Cmnd_Alias OLLAMA_SVC = /usr/bin/systemctl restart ollama.service, \
+                        /usr/bin/systemctl stop    ollama.service, \
+                        /usr/bin/systemctl start   ollama.service, \
+                        /usr/bin/systemctl daemon-reload
+
+# Reboot is needed unattended: kernel and firmware updates land here regularly
+# and jarvis previously had to hand every reboot back to a human.
+Cmnd_Alias HOST_PWR = /usr/bin/systemctl reboot
+
+homelab-ops ALL=(root) NOPASSWD: STACK_UPDATE, OLLAMA_SVC, HOST_PWR
