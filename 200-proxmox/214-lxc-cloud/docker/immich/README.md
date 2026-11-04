@@ -168,6 +168,6 @@ compose does not include it; add it to any new service taken from there.
 ## Notes
 
 - All services run on an isolated `immich_internal` network — only the server is exposed
-- Machine-learning container downloads CLIP + face-rec models on first job; expect ~10 minutes of high CPU on the first full library scan
+- Machine learning runs on jarvis (see "Machine learning" above). A full library re-scan there runs on its GPU; a temporary local ML container would download its models first and run on CPU
 - NFS is fine for the photo library; **never** move `./db` onto NFS (postgres corruption, model load races)
 - The Nextcloud photo apps stay installed but disabled — users who explore the web UI won't see stale photo timelines
