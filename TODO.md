@@ -7,11 +7,16 @@
       but active Deck (kanban) content, which was migrated into Vikunja first. All four
       containers removed, Traefik routes and cron cleared, `docker/nextcloud/` retained in the repo
       as reference-only. Backup at `~/nextcloud-decom-20260816/` on cloud-ct.
-- [ ] **Delete `/mnt/nfs/nextcloud`** (TrueNAS `Vault/Nextcloud`, 12 GB): **not before 2026-08-30**,
-      a two-week cooling-off after decommissioning. Of the 12 GB, ~23 MB is real user data and it is
-      already in the backup at `~/nextcloud-decom-20260816/` on cloud-ct. Also remove the fstab line
-      and update the NFS Mounts section below. Consider copying the backup off cloud-ct first so the
-      only remaining copy is not on the same host.
+- [ ] **Delete `/mnt/nfs/nextcloud`** (TrueNAS `Vault/Nextcloud`, 12 GB): **on hold.** The
+      August estimate of "~23 MB of real user data" missed the trash folders: one user's trash held
+      52 photos and 3 videos (139 MB) that were in neither Immich nor the backup archive. They are
+      now copied into `~/nextcloud-decom-20260816/` on cloud-ct, checksum-verified. Before the
+      dataset goes: the user reviews them and uploads any wanted to Immich, and the backup gets a
+      second copy off cloud-ct. Then remove the fstab line and update the NFS Mounts section below.
+- [x] ~~**Remove `~/docker/nextcloud/` from cloud-ct**~~ Done 2026-10-26. The decommission had left the
+      stack folder on the host, so an update routine that runs `compose pull && up -d` across
+      `~/docker/*` recreated Nextcloud a week later and it ran unnoticed for two months. **A retired
+      stack must leave `~/docker/`**, not just be stopped.
 - [x] ~~**Confirm nothing was syncing calendar/contacts.**~~ Confirmed unused 2026-08-16: CalDAV
       was never in use, so the login activity was something else benign. Risk closed.
 - [x] ~~**Right-size LXC resources**~~ Done 2026-08-10 from 30 days of data: starr 8→6 GB / 4→2
@@ -66,8 +71,8 @@
       Also clean up the Firefox references in `200-proxmox/212-lxc-starr/docker/vpn/README.md`.
 - [ ] **Pi-hole**: Add `WEBPASSWORD` via `.env` file — `WEBPASSWORD=${PIHOLE_PASSWORD}` in `199-raspi5/docker/pihole/docker-compose.yml`
 - [ ] **Traefik**: Rename `199-raspi5/docker/traefik/data/` config folder (e.g., to `config/`) to avoid conflict with the global `data/` gitignore rule. Currently worked around with a gitignore override in root `.gitignore`.
-- [ ] **`203-ubuntu-plex/`**: superseded by `213-lxc-plex/` after the VM→LXC migration. Decide
-      whether to keep it as historical reference or drop it.
+- [x] ~~**`203-ubuntu-plex/`**~~ Removed 2026-11-03: superseded by `213-lxc-plex/` after the VM to
+      LXC migration. Git history keeps it.
 - [x] ~~**Audit repo compose files against what is actually deployed.**~~ Done 2026-08-15: 25 stacks
       diffed, 18 identical, 7 drifting, all reconciled. Found VaultWarden and Mealie with open
       registration live, and Plex running `privileged: true`. All 25 now identical.
@@ -78,9 +83,3 @@
 - [ ] **Standardise on one compose filename.** Every host mixes `docker-compose.yml` and
       `.yaml` — `dnspi` has one of each. This caused two failed deploys on 2026-08-15. Until it is
       fixed, any automation must glob `docker-compose.y*ml`.
-
-## Media
-
-- [ ] **Add ~20 regional films to TMDB** so Radarr and Plex can identify them (currently sitting in
-      `downloads/radarr`, e.g. Bhagubai 2026, Chennai Central 2020, Frame 2026, Tighee 2026,
-      Vastupurush 2002). Until then they stay unmonitored with Plex reading names from filenames.
