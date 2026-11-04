@@ -7,7 +7,7 @@ Self-hosted photo and video library. Replaces Google Photos and Nextcloud Photos
 | Service | Purpose |
 |---------|---------|
 | immich-server | Web UI and API |
-| immich-machine-learning | CLIP-based search + face recognition |
+| immich-machine-learning | CLIP search + face recognition, **runs on jarvis**, not here ([205-gmktek/docker/immich-ml/](../../../../205-gmktek/docker/immich-ml/)) |
 | immich_redis | Session cache and job queue |
 | immich_db | Postgres 14 with vectorchord extension for embeddings |
 
@@ -52,7 +52,6 @@ First boot pulls all images (~3 GB) and initializes Postgres. Watch `docker comp
 | Container path | Host path | Purpose |
 |----------------|-----------|---------|
 | `/usr/src/app/upload` | `/mnt/nfs/immich` (NFS) | Photo library, thumbs, backups |
-| `/cache` (ML) | `./ml-cache` | Downloaded CLIP/face-rec models (~2 GB) |
 | `/var/lib/postgresql/data` | `./db` | Postgres data — **must be local**, NFS+Postgres corrupts |
 
 ## Users
@@ -115,9 +114,28 @@ Once verified:
    docker exec -u abc nextcloud php /app/www/public/occ preview:generate-all -vvv
    ```
 
+## Machine learning
+
+Immich's ML (CLIP smart search, face detection, OCR) runs on **jarvis** against its GPU, set by
+`IMMICH_MACHINE_LEARNING_URL=http://192.168.1.205:3003`. There is no ML container on this host
+(the CPU fallback was removed on 2026-11-03 after months without a single request).
+
+**If jarvis is down**, uploads, browsing and the timeline keep working. Smart search queries fail,
+and new uploads wait for their ML jobs (search index, faces) until jarvis is back; Immich runs them
+then. For a long outage, run a temporary CPU ML container here and point the server at it:
+
+```bash
+docker run -d --name immich-ml-temp --network immich_immich_internal \
+  --security-opt apparmor=unconfined -v ~/immich-ml-cache:/cache \
+  ghcr.io/immich-app/immich-machine-learning:v3.3.5    # same version as the server
+# then set IMMICH_MACHINE_LEARNING_URL=http://immich-ml-temp:3003 and recreate immich-server
+```
+
+It downloads its models (about 0.8 GB) on first use. Remove it and restore the jarvis URL afterwards.
+
 ## Upgrading Immich
 
-All four images are pinned: `immich-server` and `immich-machine-learning` to an exact release
+All images are pinned: `immich-server` here and `immich-machine-learning` on jarvis to an exact release
 (`v3.3.5`), and the database and cache images to the exact digests in upstream's compose for that
 release. The ML container on jarvis (`205-gmktek/docker/immich-ml/`) carries the matching
 `-rocm` tag. **Bump them together**, never one at a time, or server and ML can end up on
@@ -151,5 +169,5 @@ compose does not include it; add it to any new service taken from there.
 
 - All services run on an isolated `immich_internal` network — only the server is exposed
 - Machine-learning container downloads CLIP + face-rec models on first job; expect ~10 minutes of high CPU on the first full library scan
-- NFS is fine for the photo library; **never** move `./db` or `./ml-cache` onto NFS (postgres corruption, model load races)
+- NFS is fine for the photo library; **never** move `./db` onto NFS (postgres corruption, model load races)
 - The Nextcloud photo apps stay installed but disabled — users who explore the web UI won't see stale photo timelines
