@@ -14,9 +14,9 @@ services:
     environment:
       # ML runs on jarvis (205) against the Strix Halo iGPU - 2.6x the
       # throughput of running it here, and it keeps a bursty workload off this
-      # host. See 205-gmktek/docker/immich-ml/. The local container below is
-      # kept running as a manual fallback: if jarvis is down, drop this line
-      # and restart to fall back to it.
+      # host. See 205-gmktek/docker/immich-ml/. There is no local ML container:
+      # if jarvis is down, uploads still work and smart search / face jobs
+      # queue until it is back. README "Machine learning" has the recovery path.
       - IMMICH_MACHINE_LEARNING_URL=http://192.168.1.205:3003
       - UPLOAD_LOCATION=/mnt/nfs/immich
       - DB_HOSTNAME=immich_db
@@ -37,23 +37,6 @@ services:
         condition: service_healthy
       immich_redis:
         condition: service_healthy
-    restart: unless-stopped
-
-  # FALLBACK ONLY - the active ML server is on jarvis (205), see the
-  # IMMICH_MACHINE_LEARNING_URL above and 205-gmktek/docker/immich-ml/.
-  # Kept running deliberately so a jarvis outage is one env-var change away
-  # from recovery. Remove once the offload has run clean for a week.
-  immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:v3.3.5
-    container_name: immich-machine-learning
-    security_opt:
-      - apparmor=unconfined
-    environment:
-      - TZ=America/Los_Angeles
-    volumes:
-      - ./ml-cache:/cache
-    networks:
-      - immich_internal
     restart: unless-stopped
 
   immich_redis:

@@ -55,7 +55,7 @@ lxc.apparmor.profile: unconfined
 | [docker/monitoring-agent/](docker/monitoring-agent/) | Promtail, node-exporter, cAdvisor | 9080 (cadvisor) |
 | [docker/vaultwarden/](docker/vaultwarden/) | VaultWarden | 8082 → 80 |
 | [docker/mealie/](docker/mealie/) | Mealie recipe manager | 9000 |
-| [docker/immich/](docker/immich/) | Immich server, machine-learning, PostgreSQL, Redis | 2283 |
+| [docker/immich/](docker/immich/) | Immich server, PostgreSQL, Valkey (ML runs on jarvis) | 2283 |
 | [docker/paperless/](docker/paperless/) | Paperless-ngx, PostgreSQL, Redis broker, Gotenberg, Tika, Paperless-AI, Paperless-GPT | 8000 (ngx), 8080 (gpt), 3000 (ai) |
 | [docker/vikunja/](docker/vikunja/) | Vikunja, PostgreSQL | 3456 |
 | ~~[docker/nextcloud/](docker/nextcloud/)~~ | ~~NextCloud, MariaDB, Redis, Collabora~~ | **decommissioned 2026-08-16** |
