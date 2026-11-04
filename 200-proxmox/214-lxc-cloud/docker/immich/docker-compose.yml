@@ -1,7 +1,9 @@
 services:
   immich-server:
-    # Pinned to `release` — bump deliberately, see README "Upgrading Immich".
-    image: ghcr.io/immich-app/immich-server:release
+    # Pinned to an exact release. Bump server, both ML containers (here and
+    # on jarvis) and the database/cache images together, from that release's
+    # docker/docker-compose.yml upstream - see README "Upgrading Immich".
+    image: ghcr.io/immich-app/immich-server:v3.3.5
     container_name: immich-server
     # Force UID/GID 1000:1000 so writes to the NFS-backed UPLOAD_LOCATION land
     # as wtuscano:Admin on TrueNAS (both are UID/GID 1000). Immich's default
@@ -34,7 +36,7 @@ services:
       immich_db:
         condition: service_healthy
       immich_redis:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   # FALLBACK ONLY - the active ML server is on jarvis (205), see the
@@ -42,7 +44,7 @@ services:
   # Kept running deliberately so a jarvis outage is one env-var change away
   # from recovery. Remove once the offload has run clean for a week.
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:release
+    image: ghcr.io/immich-app/immich-machine-learning:v3.3.5
     container_name: immich-machine-learning
     security_opt:
       - apparmor=unconfined
@@ -55,18 +57,24 @@ services:
     restart: unless-stopped
 
   immich_redis:
-    image: redis:alpine
+    # Valkey, as in upstream's compose. Job queue only, nothing persisted.
+    image: docker.io/valkey/valkey:9@sha256:c123e3715db63d06d4ad6964884037aa0d5d4d703939b9929954112889708e1d
     container_name: immich_redis
     security_opt:
       - apparmor=unconfined
+    healthcheck:
+      test: redis-cli ping | grep -q PONG || exit 1
     networks:
       - immich_internal
     restart: unless-stopped
 
   immich_db:
-    # Immich-published Postgres 14 with the vectorchord extension baked in.
-    # Verify tag against Immich's current release compose before bumping.
-    image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0
+    # Immich-published Postgres 14 with the vectorchord extension, exactly as
+    # in upstream's compose for the pinned release. On a newer vchord, Immich
+    # runs ALTER EXTENSION and reindexes by itself at startup (needs the DB
+    # user to be superuser, which it is). After that the old image will not
+    # start, so rollback is a snapshot or a restore, not a tag change.
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
     container_name: immich_db
     security_opt:
       - apparmor=unconfined
@@ -77,13 +85,15 @@ services:
       - POSTGRES_INITDB_ARGS=--data-checksums
     volumes:
       - ./db:/var/lib/postgresql/data
+    # Docker's 64 MB default is too small for parallel queries and vacuums.
+    shm_size: 128mb
     networks:
       - immich_internal
+    # The image ships its own healthcheck (pg_isready as POSTGRES_USER plus a
+    # data-checksum failure count). The old pg_isready without --username
+    # logged 'role "root" does not exist' every 10s.
     healthcheck:
-      test: pg_isready --dbname=immich
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      disable: false
     restart: unless-stopped
 
 networks:

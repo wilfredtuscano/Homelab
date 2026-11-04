@@ -117,16 +117,35 @@ Once verified:
 
 ## Upgrading Immich
 
-Pin the release tag after the first successful boot, then bump deliberately:
+All four images are pinned: `immich-server` and `immich-machine-learning` to an exact release
+(`v3.3.5`), and the database and cache images to the exact digests in upstream's compose for that
+release. The ML container on jarvis (`205-gmktek/docker/immich-ml/`) carries the matching
+`-rocm` tag. **Bump them together**, never one at a time, or server and ML can end up on
+different versions.
 
 ```bash
-cd ~/docker/immich
-# 1. Edit docker-compose.yml — change `release` to a specific tag like `v1.140.0`
-docker compose pull
-docker compose up -d
+# 1. Read the release notes from the current version up to the target.
+# 2. Diff upstream's docker/docker-compose.yml at the target tag against this file, and take
+#    any database / cache image (with digest) and shm_size changes from it.
+# 3. Back up first:
+docker exec immich_db pg_dumpall --clean --if-exists -U immich | gzip > ~/immich-dumpall.sql.gz
+# 4. Pull, then recreate:
+cd ~/docker/immich && docker compose pull && docker compose up -d
 ```
 
-Postgres major-version bumps (e.g., 14 → 16) require a data migration; follow Immich's release notes carefully.
+**Vector extension upgrades are automatic.** When the database image carries a newer VectorChord,
+Immich runs `ALTER EXTENSION vchord UPDATE` and reindexes `clip_index` and `face_index` at startup,
+because the `immich` DB user is superuser. Watch for `Updating VectorChord extension` in the
+server log. After that the previous database image refuses to start, so **rollback is a restore
+or a snapshot, not a tag change**. On the Proxmox host, take the snapshot with
+`zfs snapshot local-nvme/subvol-214-disk-0@<name>`, **not** `pct snapshot`: this container has
+`fuse=1`, and `pct snapshot` deadlocked it frozen.
+
+Postgres major-version bumps (e.g. 14 to 16) require a data migration; follow Immich's release notes
+carefully.
+
+**Docker in this LXC needs `security_opt: apparmor=unconfined`** on every service. Upstream's
+compose does not include it; add it to any new service taken from there.
 
 ## Notes
 

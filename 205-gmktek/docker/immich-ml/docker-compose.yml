@@ -13,7 +13,9 @@ services:
   # Single-image latency is ~identical across all three (~0.12s); the win is
   # throughput under concurrency, which is the case that actually hurt.
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:release-rocm
+    # Pinned to match immich-server on cloud-ct. Bump together with it, see
+    # 200-proxmox/214-lxc-cloud/docker/immich/README.md "Upgrading Immich".
+    image: ghcr.io/immich-app/immich-machine-learning:v3.3.5-rocm
     container_name: immich-machine-learning
     # Strix Halo (gfx1151) works against this image with no HSA_OVERRIDE_GFX_VERSION.
     # If a future image or driver regresses, check for a SILENT CPU fallback before
