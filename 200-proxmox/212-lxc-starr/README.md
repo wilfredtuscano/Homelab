@@ -45,6 +45,39 @@ lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file
 5. Mount NFS shares from TrueNAS
 6. Deploy stacks
 
+## Host tools: ffprobe and ffmpeg
+
+Media management on this host reads file metadata (codec, HDR / Dolby Vision, bitrate, audio
+languages) and grabs sample frames, so `ffprobe` and `ffmpeg` are installed on the host, from
+Jellyfin's apt repository. The `jellyfin-ffmpeg8` package is a self-contained media-server build
+under `/usr/lib/jellyfin-ffmpeg/`; it does not replace system libraries, and the routine
+`apt upgrade` keeps it current. Ubuntu 22.04's own `ffmpeg` is 4.4 (2021) and pulls in about 160
+packages.
+
+Run as root (the login user has no sudo here, so from the Proxmox host: `pct exec 212 -- sh -c '...'`):
+
+```bash
+install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key -o /etc/apt/keyrings/jellyfin.asc
+cat > /etc/apt/sources.list.d/jellyfin.sources <<'SRC'
+Types: deb
+URIs: https://repo.jellyfin.org/ubuntu
+Suites: jammy
+Components: main
+Architectures: amd64
+Signed-By: /etc/apt/keyrings/jellyfin.asc
+SRC
+apt-get update
+apt-get install -y --no-install-recommends jellyfin-ffmpeg8
+ln -sfn /usr/lib/jellyfin-ffmpeg/ffmpeg  /usr/local/bin/ffmpeg
+ln -sfn /usr/lib/jellyfin-ffmpeg/ffprobe /usr/local/bin/ffprobe
+```
+
+The key is kept ASCII-armoured (`.asc`), which apt accepts directly, because the host has no `gpg`.
+Check: `ffprobe -version` reports `8.1.3-Jellyfin` (or newer). Reading headers needs no GPU, and
+this host has none (no `/dev/dri`). It is not a transcoding host: two cores decode 4K HEVC at
+about real time. Bulk re-encoding is planned for the GPU host.
+
 ## Docker Stacks
 
 | Folder | Services |
