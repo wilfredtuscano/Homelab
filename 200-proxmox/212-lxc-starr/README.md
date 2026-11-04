@@ -57,10 +57,30 @@ lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file
 ## NFS Mounts
 
 ```
-192.168.1.201:/mnt/Vault/Downloads    /mnt/nfs/downloads     nfs  defaults  0  0
-192.168.1.201:/mnt/Vault/Media        /mnt/nfs/media         nfs  defaults  0  0
-192.168.1.201:/mnt/Vault/RecycleBin   /mnt/nfs/recycle-bin   nfs  defaults  0  0
-192.168.1.201:/mnt/Vault/Games        /mnt/nfs/games         nfs  defaults  0  0
+192.168.1.201:/mnt/Vault/Downloads    /mnt/nfs/downloads     nfs  defaults,_netdev,retry=15,x-systemd.mount-timeout=20min  0  0
+192.168.1.201:/mnt/Vault/Media        /mnt/nfs/media         nfs  defaults,_netdev,retry=15,x-systemd.mount-timeout=20min  0  0
+192.168.1.201:/mnt/Vault/RecycleBin   /mnt/nfs/recycle-bin   nfs  defaults,_netdev,retry=15,x-systemd.mount-timeout=20min  0  0
+192.168.1.201:/mnt/Vault/Games        /mnt/nfs/games         nfs  defaults,_netdev,retry=15,x-systemd.mount-timeout=20min  0  0
 ```
+
+Options: `_netdev,retry=15,x-systemd.mount-timeout=20min`. A share that is not ready at boot keeps
+retrying for up to 15 minutes instead of failing once.
+
+**Docker waits for these mounts.** `/etc/systemd/system/docker.service.d/nfs-mounts.conf`:
+
+```ini
+[Unit]
+RequiresMountsFor=/mnt/nfs/downloads /mnt/nfs/media /mnt/nfs/recycle-bin
+```
+
+`/mnt/nfs/games` is deliberately not listed: no container uses it (it is mounted for file work
+only), so a problem with that share should not hold back the *arr apps and qBittorrent.
+
+Without it Docker starts as soon as the network is up. If TrueNAS is not serving NFS yet, the apps
+start against the **empty local mountpoint directories** and write there instead of the NAS. With
+it, a slow or absent TrueNAS only delays the apps. `RequiresMountsFor` implies `Requires=`, so
+unmounting a listed share also stops Docker: remove it from the drop-in first.
+qBittorrent additionally waits for a healthy VPN tunnel: see `docker/vpn/README.md` (vpn-watchdog).
+Apply with `systemctl daemon-reload`; check with `systemctl show docker -p Requires`.
 
 NFS access requires enabling the `mount` feature in LXC Options → Features in the Proxmox UI.

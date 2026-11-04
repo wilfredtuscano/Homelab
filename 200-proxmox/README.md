@@ -40,6 +40,27 @@ Hypervisor hosting all VMs and LXCs. HBA controller is passed through to TrueNAS
 | LXC - Plex | 213 | 192.168.1.203 | Plex + iGPU QuickSync, Audiobookshelf, Calibre-web | [213-lxc-plex/](213-lxc-plex/) |
 | LXC - Cloud | 214 | 192.168.1.204 | VaultWarden, Mealie, Immich, Paperless-ngx, Vikunja | [214-lxc-cloud/](214-lxc-cloud/) |
 
+## Boot order
+
+Every guest starts with the host, **TrueNAS first**, because the three LXCs mount NFS from it:
+
+| Guest | `onboot` | `startup` |
+|---|---|---|
+| VM 201 TrueNAS | 1 | `order=1,up=120` (Proxmox waits 120 s before the next group) |
+| CT 212 starr, 213 plex, 214 cloud | 1 | `order=2` |
+
+```bash
+qm set 201 --onboot 1 --startup order=1,up=120
+for id in 212 213 214; do pct set $id --onboot 1 --startup order=2; done
+```
+
+The delay is a courtesy, not the safety net. Each LXC also retries its NFS mounts for up to 15
+minutes and will not start Docker until they are mounted (see each LXC's README, "NFS Mounts"), so a
+slow TrueNAS delays the apps rather than letting them write to empty local directories.
+
+**Snapshots of these LXCs:** use `zfs snapshot local-nvme/subvol-<id>-disk-0@<name>`, not
+`pct snapshot`. The LXCs have `fuse=1`, and `pct snapshot` froze CT 214 in a deadlock.
+
 ## Resource allocation
 
 Host capacity: **24 threads** (i7-13700K, 8P+8E = 16 cores) and **62 GB** usable RAM.
