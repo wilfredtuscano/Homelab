@@ -72,10 +72,28 @@ Traefik on 199 routes traffic via file provider — see `199-raspi5/docker/traef
 ## NFS Mounts
 
 ```
-192.168.1.201:/mnt/Vault/Immich     /mnt/nfs/immich     nfs  defaults  0  0
-192.168.1.201:/mnt/Vault/Paperless  /mnt/nfs/paperless  nfs  defaults  0  0
-192.168.1.201:/mnt/Vault/Nextcloud  /mnt/nfs/nextcloud  nfs  defaults  0  0   # retained, unused
+192.168.1.201:/mnt/Vault/Immich     /mnt/nfs/immich     nfs  defaults,_netdev,retry=15,x-systemd.mount-timeout=20min  0  0
+192.168.1.201:/mnt/Vault/Paperless  /mnt/nfs/paperless  nfs  defaults,_netdev,retry=15,x-systemd.mount-timeout=20min  0  0
+192.168.1.201:/mnt/Vault/Nextcloud  /mnt/nfs/nextcloud  nfs  defaults,_netdev,retry=15,x-systemd.mount-timeout=20min  0  0   # retired, to be removed
 ```
+
+Options: `_netdev,retry=15,x-systemd.mount-timeout=20min`. A share that is not ready at boot keeps
+retrying for up to 15 minutes instead of failing once.
+
+**Docker waits for these mounts.** `/etc/systemd/system/docker.service.d/nfs-mounts.conf`:
+
+```ini
+[Unit]
+RequiresMountsFor=/mnt/nfs/immich /mnt/nfs/paperless
+```
+
+Without it Docker starts as soon as the network is up. If TrueNAS is not serving NFS yet, the apps
+start against the **empty local mountpoint directories** and write there instead of the NAS. With
+it, a slow or absent TrueNAS only delays the apps. `RequiresMountsFor` implies `Requires=`, so
+unmounting a listed share also stops Docker: remove it from the drop-in first.
+The Nextcloud share is deliberately **not** listed: it is retired and will be removed, and listing
+it would make removing it stop Docker.
+Apply with `systemctl daemon-reload`; check with `systemctl show docker -p Requires`.
 
 NFS access requires enabling the `mount` feature in LXC Options → Features in the Proxmox UI.
 
