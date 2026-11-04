@@ -39,3 +39,4 @@
 | [docker/traefik/](docker/traefik/) | Traefik |
 | [docker/monitoring/](docker/monitoring/) | Loki, Prometheus, Grafana |
 | [docker/homepage/](docker/homepage/) | Homepage |
+| [../monitoring-agent/](../monitoring-agent/) | Promtail, Node Exporter, cAdvisor (`AGENT_HOST=dnspi`) |

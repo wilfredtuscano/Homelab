@@ -56,13 +56,14 @@
       (auth challenge) instead of 404. Certificate serial unchanged, so nothing was re-issued.
       Note: `DOCKER_API_VERSION` does **not** work around this — v3.0 hardcodes API 1.24 and
       ignores the variable. Verified against a throwaway container before touching ingress.
-- [ ] **`router.local.wilfredtuscano.com` returns 502.** The service sets `passHostHeader: true`,
-      and the router at 192.168.1.1 drops the connection when the Host header is not its own
-      (verified: 401 with default Host, no response at all with the proxied Host). Set
-      `passHostHeader: false` on that service. `gateway` → 10.0.0.1 is unaffected.
-- [ ] **Prometheus has two permanently-down targets** — `cadvisor` and `node` on 192.168.1.199.
-      The RasPi runs the monitoring *server*, not the agent, so these were never going to come up.
-      Either deploy the agent there or drop the targets from the scrape config.
+- [x] ~~**`router.local.wilfredtuscano.com` returns 502.**~~ Fixed 2026-11-03: `passHostHeader: false`
+      on that service. The router drops connections whose Host header is not its own; it now
+      answers with its own login prompt (401), the same as when reached directly.
+- [x] ~~**Prometheus has two permanently-down targets** on 192.168.1.199.~~ Fixed 2026-11-03: the
+      monitoring agent now runs on the RasPi too (`AGENT_HOST=dnspi`); all 14 targets up.
+- [ ] **Enable the memory cgroup on the RasPi** (`cgroup_enable=memory` in `cmdline.txt`, then a
+      reboot). Until then cAdvisor's per-container memory on dnspi is meaningless. The reboot takes
+      DNS down for the LAN, so schedule it.
 
 ## Cleanup
 
