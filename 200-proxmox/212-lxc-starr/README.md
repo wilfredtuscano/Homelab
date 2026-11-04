@@ -70,8 +70,11 @@ retrying for up to 15 minutes instead of failing once.
 
 ```ini
 [Unit]
-RequiresMountsFor=/mnt/nfs/downloads /mnt/nfs/media /mnt/nfs/recycle-bin /mnt/nfs/games
+RequiresMountsFor=/mnt/nfs/downloads /mnt/nfs/media /mnt/nfs/recycle-bin
 ```
+
+`/mnt/nfs/games` is deliberately not listed: no container uses it (it is mounted for file work
+only), so a problem with that share should not hold back the *arr apps and qBittorrent.
 
 Without it Docker starts as soon as the network is up. If TrueNAS is not serving NFS yet, the apps
 start against the **empty local mountpoint directories** and write there instead of the NAS. With
