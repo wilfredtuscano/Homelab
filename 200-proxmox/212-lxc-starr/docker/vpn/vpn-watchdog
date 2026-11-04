@@ -1,0 +1,147 @@
+#!/bin/bash
+# vpn-watchdog - starr-ct (212)
+#
+# qBittorrent runs inside gluetun's network namespace. It must only ever
+# start once gluetun is up, connected and healthy, and it must be restarted
+# after gluetun reconnects the tunnel: a reconnect leaves qBittorrent's UDP
+# tracker and DHT sockets dead while it keeps running, and public torrents
+# stall for days.
+#
+# Docker cannot guarantee either on its own: `depends_on: service_healthy`
+# only applies inside `docker compose up`, not when the daemon restarts
+# containers after a reboot. So qbittorrent has `restart: "no"` and this
+# script, run every minute from cron, is its only automatic starter:
+#
+#   start    qbittorrent is stopped because of a reboot or daemon restart
+#            (it exited before the daemon's current start time) and gluetun
+#            has been healthy for HEALTHY_FOR seconds.
+#   restart  qbittorrent runs on a stale tunnel (gluetun recreated, or a
+#            "wireguard setup is complete" line newer than qbittorrent's
+#            start), gluetun is healthy, the last reconnect is SETTLE seconds
+#            old, and no action was taken in the last COOLDOWN seconds.
+#
+# Never touches gluetun, and never qBittorrent's settings, torrents or API.
+# A stop made by hand (exit after the daemon started) is left alone.
+# Disable completely with: touch ~/.vpn-watchdog.pause
+#
+# Dry-run unless VPN_WATCHDOG_ARMED=1: logs what it would do, does nothing.
+#
+# Install: ~/.local/bin/vpn-watchdog, crontab: * * * * * ~/.local/bin/vpn-watchdog
+set -uo pipefail
+
+GLUETUN=gluetun
+QBT=qbittorrent
+COMPOSE_DIR=${VPN_WATCHDOG_COMPOSE_DIR:-$HOME/docker/vpn}
+HEALTHY_FOR=120
+SETTLE=600
+COOLDOWN=1800
+
+STATE_DIR=${VPN_WATCHDOG_STATE_DIR:-$HOME/.vpn-watchdog}
+LOG=${VPN_WATCHDOG_LOG:-$HOME/vpn-watchdog.log}
+PAUSE=$HOME/.vpn-watchdog.pause
+ARMED=${VPN_WATCHDOG_ARMED:-0}
+
+mkdir -p "$STATE_DIR"
+exec 9>"$STATE_DIR/lock"
+flock -n 9 || exit 0
+[ -e "$PAUSE" ] && exit 0
+
+now=$(date +%s)
+log() { printf '[%s] %s\n' "$(date -Is)" "$*" >> "$LOG"; }
+epoch() { date -d "$1" +%s 2>/dev/null || echo 0; }
+
+# Last action time is kept apart for dry-run, so a dry-run period does not
+# delay the first real action once armed.
+if [ "$ARMED" = 1 ]; then mode=ACT; last_file=$STATE_DIR/last_action
+else mode=DRY-RUN; last_file=$STATE_DIR/last_action_dry; fi
+
+# act <start|restart|recreate> <reason>. "recreate" is for a qbittorrent
+# still pointing at a gluetun container that no longer exists: docker
+# start/restart cannot rejoin a namespace that is gone, compose can.
+act() {
+  local since_last=$(( now - $(cat "$last_file" 2>/dev/null || echo 0) ))
+  if [ "$since_last" -lt "$COOLDOWN" ]; then
+    log "$mode hold $1 ($2): last action ${since_last}s ago, cooldown ${COOLDOWN}s"
+    return
+  fi
+  if [ "$ARMED" = 1 ]; then
+    local ok
+    if [ "$1" = recreate ]; then
+      ok=$(cd "$COMPOSE_DIR" && docker compose up -d --no-deps --force-recreate "$QBT" >/dev/null 2>&1 && echo y)
+    else
+      ok=$(docker "$1" "$QBT" >/dev/null 2>&1 && echo y)
+    fi
+    if [ "$ok" = y ]; then log "ACT $1 $QBT: $2"; else log "ACT $1 $QBT FAILED: $2"; fi
+  else
+    log "DRY-RUN would $1 $QBT: $2"
+  fi
+  echo "$now" > "$last_file"
+}
+
+# --- gluetun: running, healthy, and for how long --------------------------
+read -r g_running g_health g_started g_id < <(docker inspect -f \
+  '{{.State.Running}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}} {{.State.StartedAt}} {{.Id}}' \
+  "$GLUETUN" 2>/dev/null) || { log "gluetun not found"; exit 0; }
+
+if [ "$g_running" != true ] || [ "$g_health" != healthy ]; then
+  rm -f "$STATE_DIR/healthy_since"
+  exit 0
+fi
+g_start=$(epoch "$g_started")
+[ -s "$STATE_DIR/healthy_since" ] || echo "$now" > "$STATE_DIR/healthy_since"
+# Healthy-for counts from the latest of: first seen healthy by this script,
+# gluetun's container start (a stale file survives a reboot), and the last
+# tunnel-up line (gluetun can reconnect without leaving "healthy" for long).
+g_last_up=$(docker logs -t --since "$g_started" "$GLUETUN" 2>&1 \
+  | grep 'wireguard setup is complete' | tail -1 | cut -d' ' -f1)
+ref=$(cat "$STATE_DIR/healthy_since")
+[ "$g_start" -gt "$ref" ] && ref=$g_start
+[ -n "$g_last_up" ] && [ "$(epoch "$g_last_up")" -gt "$ref" ] && ref=$(epoch "$g_last_up")
+healthy_for=$(( now - ref ))
+
+# --- qbittorrent ----------------------------------------------------------
+read -r q_running q_started q_finished q_net < <(docker inspect -f \
+  '{{.State.Running}} {{.State.StartedAt}} {{.State.FinishedAt}} {{.HostConfig.NetworkMode}}' \
+  "$QBT" 2>/dev/null) || { log "qbittorrent not found"; exit 0; }
+
+if [ "$q_running" != true ]; then
+  daemon_start=$(epoch "$(systemctl show docker -p ActiveEnterTimestamp --value)")
+  finished=$(epoch "$q_finished")
+  if [ "$finished" -gt "$daemon_start" ]; then
+    exit 0   # stopped after the daemon came up: a manual stop, leave it
+  fi
+  if [ "$healthy_for" -lt "$HEALTHY_FOR" ]; then
+    exit 0   # wait until gluetun has been healthy long enough
+  fi
+  if [ "$q_net" = "container:$g_id" ]; then verb=start; else verb=recreate; fi
+  act "$verb" "stopped by reboot/daemon restart; gluetun healthy ${healthy_for}s"
+  exit 0
+fi
+
+# Running: is it on the current tunnel?
+q_start=$(epoch "$q_started")
+stale=""
+verb=restart
+if [ "$q_net" != "container:$g_id" ]; then
+  stale="attached to a previous gluetun container"
+  verb=recreate
+  last_up=$g_start
+elif [ "$g_start" -gt "$q_start" ]; then
+  stale="gluetun restarted after qbittorrent started"
+  last_up=$g_start
+else
+  up_line=$(docker logs -t --since "$q_started" "$GLUETUN" 2>&1 \
+    | grep 'wireguard setup is complete' | tail -1 | cut -d' ' -f1)
+  if [ -n "$up_line" ]; then
+    last_up=$(epoch "$up_line")
+    [ "$last_up" -gt "$q_start" ] && stale="tunnel reconnected after qbittorrent started"
+  fi
+fi
+
+[ -z "$stale" ] && exit 0
+
+settled=$(( now - last_up ))
+if [ "$settled" -lt "$SETTLE" ]; then
+  exit 0   # wait out a reconnect storm
+fi
+act "$verb" "$stale; tunnel up ${settled}s, gluetun healthy ${healthy_for}s"

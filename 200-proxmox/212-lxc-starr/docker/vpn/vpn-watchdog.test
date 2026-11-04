@@ -1,0 +1,79 @@
+#!/bin/bash
+# vpn-watchdog.test - exercises every branch of vpn-watchdog against a fake
+# `docker` and `systemctl`. Touches no real container. Needs GNU date.
+#
+#   ./vpn-watchdog.test            run all scenarios, exit 1 on any failure
+set -uo pipefail
+
+HERE=$(cd "$(dirname "$0")" && pwd)
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
+mkdir -p "$WORK/bin" "$WORK/home"
+
+# Fake docker: answers from scenario variables exported by each test.
+cat > "$WORK/bin/docker" <<'SHIM'
+#!/bin/bash
+case "$1" in
+  inspect)
+    name=${@: -1}
+    if [ "$name" = gluetun ]; then echo "$G_RUNNING $G_HEALTH $G_STARTED $G_ID"
+    else echo "$Q_RUNNING $Q_STARTED $Q_FINISHED $Q_NET"; fi ;;
+  logs)
+    since=""; while [ $# -gt 0 ]; do [ "$1" = --since ] && since=$2; shift; done
+    s=$(date -d "$since" +%s)
+    printf '%s\n' "${G_UPS:-}" | while read -r t; do
+      [ -n "$t" ] && [ "$(date -d "$t" +%s)" -ge "$s" ] && echo "$t INFO [vpn] wireguard setup is complete."
+    done ;;
+  start|restart) echo "$1" >> "$ACTIONS" ;;
+  compose) echo recreate >> "$ACTIONS" ;;
+esac
+SHIM
+cat > "$WORK/bin/systemctl" <<'SHIM'
+#!/bin/bash
+echo "$DAEMON_START"
+SHIM
+chmod +x "$WORK/bin/"*
+
+ago() { date -u -d "@$(( $(date +%s) - $1 ))" +%Y-%m-%dT%H:%M:%S.000000000Z; }
+
+pass=0; fail=0
+run() {  # run <name> <expected action or none>   (scenario vars already set)
+  local name=$1 want=$2
+  export ACTIONS=$WORK/actions; : > "$ACTIONS"
+  HOME=$WORK/home PATH="$WORK/bin:$PATH" VPN_WATCHDOG_ARMED=1 \
+    VPN_WATCHDOG_STATE_DIR=$WORK/state VPN_WATCHDOG_LOG=$WORK/log \
+    VPN_WATCHDOG_COMPOSE_DIR=$WORK "$HERE/vpn-watchdog"
+  local got; got=$(tail -1 "$ACTIONS" 2>/dev/null); got=${got:-none}
+  if [ "$got" = "$want" ]; then pass=$((pass+1)); echo "ok    $name -> $got"
+  else fail=$((fail+1)); echo "FAIL  $name -> got $got, want $want"; tail -2 "$WORK/log" 2>/dev/null | sed 's/^/        /'; fi
+}
+fresh() { rm -rf "$WORK/state" "$WORK/home/.vpn-watchdog.pause"; }
+
+# Baseline: gluetun healthy for an hour, qbittorrent on it, no reconnects.
+base() {
+  export G_RUNNING=true G_HEALTH=healthy G_STARTED=$(ago 3600) G_ID=abc
+  export Q_RUNNING=true Q_STARTED=$(ago 3500) Q_FINISHED=0001-01-01T00:00:00Z Q_NET=container:abc
+  export G_UPS="$(ago 3590)" DAEMON_START="$(date -u -d "@$(( $(date +%s) - 3700 ))" '+%a %Y-%m-%d %H:%M:%S UTC')"
+}
+
+fresh; base;                                                           run "steady state" none
+fresh; base; export G_HEALTH=unhealthy Q_RUNNING=false Q_FINISHED=$(ago 3800); run "gluetun unhealthy, qbt down after reboot" none
+fresh; base; export G_STARTED=$(ago 30) G_UPS="$(ago 25)" Q_RUNNING=false Q_FINISHED=$(ago 3800); run "reboot, gluetun healthy only 30s" none
+fresh; base; export G_STARTED=$(ago 300) G_UPS="$(ago 290)" Q_RUNNING=false Q_FINISHED=$(ago 3800)
+  mkdir -p "$WORK/state"; echo $(( $(date +%s) - 200 )) > "$WORK/state/healthy_since"
+                                                                       run "reboot, gluetun healthy 200s" start
+fresh; base; export Q_RUNNING=false Q_FINISHED=$(ago 600);              run "manual stop after daemon start" none
+fresh; base; export G_UPS="$(ago 3590)
+$(ago 120)";                                                           run "reconnect 2 min ago (settling)" none
+fresh; base; export G_UPS="$(ago 3590)
+$(ago 900)";                                                           run "reconnect 15 min ago" restart
+                                                                       run "same again inside cooldown" none
+fresh; base; export Q_NET=container:old;                               run "attached to old gluetun" recreate
+fresh; base; export G_STARTED=$(ago 30) G_UPS="$(ago 25)" Q_RUNNING=false Q_FINISHED=$(ago 3800)
+  mkdir -p "$WORK/state"; echo $(( $(date +%s) - 99999 )) > "$WORK/state/healthy_since"
+                                                                       run "stale healthy_since from before reboot" none
+fresh; base; export G_UPS="$(ago 3590)
+$(ago 900)"; touch "$WORK/home/.vpn-watchdog.pause";                   run "paused" none
+
+echo "passed $pass, failed $fail"
+[ "$fail" -eq 0 ]

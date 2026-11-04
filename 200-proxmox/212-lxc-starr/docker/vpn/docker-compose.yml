@@ -2,6 +2,7 @@ services:
   gluetun:
     image: qmcgaw/gluetun
     container_name: gluetun
+    restart: unless-stopped
     security_opt:
       - apparmor=unconfined
     cap_add:
@@ -39,7 +40,11 @@ services:
     volumes:
       - ./qbittorrent/config:/config
       - /mnt/nfs/downloads:/downloads
-    restart: unless-stopped
+    # Not restarted by Docker. After a reboot the daemon would start it
+    # alongside gluetun and ignore depends_on, before the tunnel is healthy.
+    # vpn-watchdog (see README) is its only automatic starter, and restarts it
+    # after a tunnel reconnect leaves its sockets stale.
+    restart: "no"
     network_mode: service:gluetun
     depends_on:
       gluetun:
