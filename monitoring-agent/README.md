@@ -41,8 +41,13 @@ Exposes per-container resource metrics. While Node Exporter tells you "the VM is
    | Plex (192.168.1.203) | `plex` |
    | Cloud (192.168.1.204) | `cloud` |
    | Jarvis (192.168.1.205) | `jarvis` |
+   | RasPi5 / dnspi (192.168.1.199) | `dnspi` |
 
-   > RasPi5 (199) is **not** in this list: it runs the monitoring *server*, not the agent.
+   > The RasPi also runs the monitoring *server*. Its agent watches the box that DNS, Traefik and
+   > monitoring itself depend on. **Per-container memory from cAdvisor is meaningless there**: the
+   > Pi kernel boots without the memory cgroup (`docker info` warns "No memory limit support"), so
+   > every container reports the same nonsense value. CPU, network, disk and node-exporter's host
+   > memory are real. Fixing it needs `cgroup_enable=memory` in the Pi's `cmdline.txt` and a reboot.
 
    > **This step fails silently if skipped.** With no `.env`, docker compose substitutes an empty
    > string without warning, promtail starts and reports healthy, and the host's logs arrive in Loki
