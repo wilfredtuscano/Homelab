@@ -48,9 +48,11 @@ Things this host must **not** do unattended:
 - **Upgrade the GPU stack.** About 65 ROCm/HIP/amdgpu packages are installed. Nothing is
   `apt-mark hold`, so instead `stack-update` simulates the upgrade first and, if any of those
   packages is pending, skips the apt step for that run and reports it. Run that upgrade by hand,
-  supervised. Two things limit the risk anyway: ROCm comes from the version-pinned
-  `repo.radeon.com/rocm/apt/7.2` source, so only 7.2.x point releases can arrive, and Ollama ships
-  its own ROCm runtime under `/usr/local/lib/ollama/`.
+  supervised. Two things limit the risk anyway: ROCm comes from a version-pinned
+  `repo.radeon.com/rocm/apt/<version>` source (currently `7.2.4`), which never moves to a newer
+  release on its own, and Ollama ships its own ROCm runtime under `/usr/local/lib/ollama/`.
+  Each `rocm/apt/<x.y.z>` path is frozen at that release. Note that `rocm/apt/7.2` means 7.2.0, not
+  "latest 7.2": point releases need the source edited to the new path by hand.
 - **`apt full-upgrade` / `dist-upgrade`** - may remove or replace packages.
 - **`apt autoremove`** - currently proposes removing `amdgpu-dkms-firmware`.
 
@@ -119,6 +121,29 @@ Pruned 2026-08-12 from 15 models / ~290 GB down to 4 / ~59 GB, freeing **220 GB*
 | `mistral-small3.2:24b` | 15 GB | General-purpose |
 | `qwen3-coder:30b` | 18 GB | Coding |
 | `qwen2.5-coder:7b` | 4.7 GB | Small/fast coding |
+| `gpt-oss:120b` | 65 GB | Added 2026-11-08: large reasoning model |
+| `gpt-oss:20b` | 13 GB | Added 2026-11-08: fast reasoning model |
+| `qwen3.5:35b-a3b` | 22 GB | Added 2026-11-08: MoE, text and image input, structured JSON output |
+| `qwen3.5:122b` | 81 GB | Added 2026-11-08: large MoE, kept for a model comparison |
+
+Throughput on v0.40.15 + the carve-out patch, ROCm 7.2.4, 2026-11-11 (tokens/s, prompt processing /
+generation; "4k" is a ~2.3k-token prompt, "32k" ~21k). All 100% GPU at default placement:
+
+| Model | 4k | 32k |
+|---|---|---|
+| `gpt-oss:120b` | 931 / 34.4 | 651 / 29.5 |
+| `qwen3.5:122b` | 518 / 26.5 | 418 / 23.9 |
+| `gpt-oss:20b` | 1730 / 46.8 | 1362 / 40.8 |
+| `qwen3.5:35b-a3b` | 1547 / 53.8 | 1282 / 47.7 |
+| `qwen3-coder:30b` | 1588 / 59.9 | 838 / 39.8 |
+
+On 0.32.13 without the patch, `gpt-oss:120b` managed only 116 / 35 and 151 / 30 even when forced fully onto
+the GPU, so most of the prompt-processing gain is from the newer llama.cpp.
+
+Two things fixed by 0.40.15 that are worth knowing if this is ever rolled back: on 0.32.13,
+`/api/generate` with `format: "json"` returned empty output on thinking models (gpt-oss, qwen3.5;
+`/api/chat` worked), and `qwen2.5vl:32b` fully on the GPU answered image prompts with stale
+or invented text.
 
 Removed: eleven models pulled 11–12 months earlier (`llama3.3:70b`, `deepseek-r1:70b`,
 `gpt-oss:120b`, `gpt-oss:20b`, `qwen3:30b`, `codellama:34b`, `codellama:7b`, `codegemma:7b`,
@@ -132,15 +157,18 @@ weights is not.
 
 ### Building / upgrading Ollama from source
 
-Ollama is built from source against the system ROCm so it uses the gfx1151 iGPU natively. Last
-built **2026-08-15 at `v0.32.13`**.
+Ollama is built from source against the system ROCm so it uses the gfx1151 iGPU natively, with one
+local patch (below). Last built **2026-11-11 at `v0.40.15`**, ROCm **7.2.4**.
 
-The build interface changed between 0.30 and 0.32 — the old `cmake --preset 'ROCm 7'` no longer
-exists. Current process:
+Build in a separate git worktree, so the installed build's source tree stays untouched until the new
+one is tested:
 
 ```bash
 cd ~/ollama-src
-git fetch --tags origin && git checkout v<VERSION>
+git fetch --tags origin
+git worktree add --detach ~/ollama-v<VERSION> v<VERSION>
+cd ~/ollama-v<VERSION>
+git apply <repo>/205-gmktek/patches/ollama-igpu-carveout.patch
 
 # Configure. There is a backend matching each ROCm release; pick the one that
 # matches /opt/rocm/.info/version. gfx1151 is Strix Halo.
@@ -149,42 +177,90 @@ cmake -B build . -DOLLAMA_LLAMA_BACKENDS=rocm_v7_2 -DCMAKE_HIP_ARCHITECTURES=gfx
       -DCMAKE_PREFIX_PATH=/opt/rocm
 
 cmake --build build --parallel
-go build -o ollama .
+go build -ldflags "-X=github.com/ollama/ollama/version.Version=<VERSION>" -o ollama .
+go test ./server/
 ```
+
+Run the build inside `tmux`: it takes several minutes, and a dropped SSH session would otherwise
+kill it.
 
 Verify before configuring further: `grep OLLAMA_LLAMA_BACKENDS build/CMakeCache.txt` should show
 `rocm_v7_2`, and `cmake --build build --target help | grep rocm` should list
 `ollama-llama-server-rocm_v7_2`. A configure that silently omits the ROCm backend produces a
-CPU-only build.
+CPU-only build. (Do not test that with `grep -q` under `set -o pipefail`: grep exits early, the
+pipe breaks, and the check fails on a good build.)
+
+Without the `-ldflags` version stamp, `/api/version` reports `0.0.0`.
 
 Go version is handled automatically — `go.mod` requires a newer Go than the system package, and
 `GOTOOLCHAIN=auto` fetches it into `$GOPATH`. No system Go change is needed.
 
-**Test before installing.** Run the new binary on a spare port against the real model store:
+**The build bundles the ROCm runtime** (`libamdhip64`, `rocblas`, ...) into
+`build/lib/ollama/rocm_v7_2/`, copied from `/opt/rocm` at build time. A system ROCm upgrade
+therefore reaches Ollama only after a rebuild. Upgrade ROCm first, then build.
+
+#### Local patch: integrated GPU memory cap
+
+[`patches/ollama-igpu-carveout.patch`](patches/ollama-igpu-carveout.patch) changes
+`server/sched.go`. Upstream caps an integrated GPU's free memory at free *system* RAM
+(`availableMemoryForGPU`, `availableMemoryForLoad`). That is right for an APU that borrows system
+RAM, but here 96 GB is a BIOS UMA carve-out the OS never sees, so Ollama saw about 27 GB of a
+96 GB GPU. Large models were split onto the CPU, and a default `gpt-oss:120b` load got the runner
+OOM-killed. The patch skips the cap only when the iGPU's total memory exceeds total system memory,
+which only a firmware carve-out produces, so ordinary APUs behave as upstream.
+
+- Unpatched startup line: `type=iGPU total="96.0 GiB" available="27.2 GiB"`.
+- Patched: `available="95.8 GiB"`, and every model in the library loads `100% GPU`.
+- Before the patch the workaround was `PARAMETER num_gpu 999` baked into local tags. An
+  `ollama pull` of the tag removes it; with the patch it is no longer needed.
+
+If `git apply` fails on a new version, the functions have moved: re-apply by hand and refresh the
+patch file. Drop it once upstream handles carve-outs.
+
+**Test before installing.** Stop the service (the GPU memory is needed), then run the new binary on
+a spare port. Point it at a **shadow model directory**, not the live store: since 0.40 the server
+creates `manifests-v2/` in the store at startup, which fails without write access, and a shadow
+directory keeps a test build from writing to the real store at all:
 
 ```bash
-cd ~/ollama-src
-OLLAMA_HOST=127.0.0.1:11435 \
-OLLAMA_MODELS=/usr/share/ollama/.ollama/models \
-OLLAMA_LIBRARY_PATH=$HOME/ollama-src/build/lib/ollama ./ollama serve
+sudo systemctl stop ollama
+mkdir -p ~/test-models
+ln -sfn /usr/share/ollama/.ollama/models/blobs ~/test-models/blobs
+cp -r /usr/share/ollama/.ollama/models/manifests ~/test-models/
+cd ~/ollama-v<VERSION>
+OLLAMA_HOST=127.0.0.1:11435 OLLAMA_NOPRUNE=1 OLLAMA_MODELS=$HOME/test-models \
+OLLAMA_LIBRARY_PATH=$PWD/build/lib/ollama \
+OLLAMA_FLASH_ATTENTION=1 OLLAMA_CONTEXT_LENGTH=32768 ./ollama serve
 # in another shell:
 OLLAMA_HOST=127.0.0.1:11435 ./ollama run qwen2.5-coder:7b "hi"
 OLLAMA_HOST=127.0.0.1:11435 ./ollama ps    # PROCESSOR must read 100% GPU
 ```
 
+Test a large model (`gpt-oss:120b`), not only a small one: a model under ~27 GB fit even with the
+memory cap. Also run the `qwen2.5vl:32b` image test (paperless-gpt depends on it): several text
+prompts, each followed by an image prompt, and check that the image answers describe the image.
+Remove `~/test-models` and start the service again afterwards.
+
 **Install — stop the service first**, or copying the binary fails with `Text file busy` because the
-running process holds it open:
+running process holds it open. Keep the old pair as the rollback:
 
 ```bash
 sudo systemctl stop ollama
-sudo rm -rf /usr/local/lib/ollama
-sudo cp -a ~/ollama-src/build/lib/ollama /usr/local/lib/ollama
-sudo cp ~/ollama-src/ollama /usr/local/bin/ollama
+sudo cp -a /usr/local/bin/ollama /usr/local/bin/ollama.bak-<OLD>
+sudo mv /usr/local/lib/ollama /usr/local/lib/ollama.bak-<OLD>
+sudo cp -a ~/ollama-v<VERSION>/build/lib/ollama /usr/local/lib/ollama
+sudo cp ~/ollama-v<VERSION>/ollama /usr/local/bin/ollama
+sudo chown -R root:root /usr/local/lib/ollama /usr/local/bin/ollama
 sudo systemctl start ollama
+journalctl -u ollama -n 50 --no-pager | grep "inference compute"
 ```
 
-The library layout changed too: 0.30 installed `lib/ollama/rocm/`, 0.32 installs `lib/ollama/`
-plus a `rocm_v7_2/` subdirectory. Replace the whole directory rather than copying over it.
+Rollback restores both halves together: stop, put `lib/ollama.bak-<OLD>` back in place of
+`lib/ollama`, copy `ollama.bak-<OLD>` over the binary, start.
+
+The library layout changed in 0.32: 0.30 installed `lib/ollama/rocm/`, 0.32 and later install
+`lib/ollama/` plus a `rocm_v7_2/` subdirectory. Replace the whole directory rather than copying
+over it.
 
 > **Mismatched binary and libraries fall back to CPU silently.** This happened during the 0.32.13
 > upgrade: the library copy succeeded, the binary copy failed with `Text file busy`, and the
@@ -194,10 +270,13 @@ plus a `rocm_v7_2/` subdirectory. Replace the whole directory rather than copyin
 > msg="inference compute" id=cpu library=cpu      # BAD - CPU only
 > msg="inference compute" id=0 library=ROCm compute=gfx1151 libdirs=ollama,rocm_v7_2   # GOOD
 > ```
-> After any upgrade, check that line and run an inference confirming `100% GPU`. Service status
-> and API health prove nothing here.
+> After any upgrade, check that line (it should also show `available` close to 96 GiB) and run an
+> inference confirming `100% GPU`. Service status and API health prove nothing here.
 
-Keep a rollback before upgrading — `cp` the current binary and `/usr/local/lib/ollama` aside first.
+**Model store format.** 0.40 adds a `manifests-v2/` directory beside `manifests/`. The migration
+into it is not wired up yet in 0.40.15: models are still read from, and pulls still write to, the
+legacy `manifests/`, so rolling back to 0.32 keeps every model visible. Recheck this on the next
+upgrade before relying on rollback.
 
 ### Ollama is **not** a Docker stack
 
