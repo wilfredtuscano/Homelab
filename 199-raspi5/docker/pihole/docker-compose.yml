@@ -16,7 +16,7 @@ services:
       - "8080:80/tcp"
     environment:
       - TZ=US/Pacific
-      - PIHOLE_DNS_=10.55.0.2#53
+      - FTLCONF_dns_upstreams=10.55.0.2#53
     volumes:
       - "./etc-pihole:/etc/pihole"
     cap_add:
