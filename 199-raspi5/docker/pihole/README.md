@@ -15,7 +15,7 @@ Network-wide DNS ad blocker (Pi-hole) backed by a local recursive resolver (Unbo
 | 53 | TCP/UDP | DNS (Pi-hole) |
 | 8080 | TCP | Web admin UI |
 
-Unbound listens on `10.55.0.2:53` inside the `pihole_net` Docker network only — not exposed to the host. Pi-hole forwards to it via the `PIHOLE_DNS_` env var.
+Unbound listens on `10.55.0.2:53` inside the `pihole_net` Docker network only — not exposed to the host. Pi-hole forwards to it via the `FTLCONF_dns_upstreams` env var.
 
 ## Config files
 
@@ -27,7 +27,8 @@ The `mvance/unbound-rpi` image ships a complete working config (DNSSEC on, root 
 
 ## Notes
 
-- DNS upstream is **Unbound only** (`10.55.0.2#53`) — set via `PIHOLE_DNS_` env, no upstream needs to be ticked in the admin UI under Settings → DNS.
+- DNS upstream is **Unbound only** (`10.55.0.2#53`) — set via `FTLCONF_dns_upstreams`, no upstream needs to be ticked in the admin UI under Settings → DNS.
+  Pi-hole v6 ignores the v5-era `PIHOLE_DNS_` variable. With it, v6 kept the upstreams saved in `pihole.toml` (Google) and Unbound sat unused. Check with `docker exec pihole pihole-FTL --config dns.upstreams`.
 - Add local DNS records under Local DNS → DNS Records for homelab hostnames.
 - Image is `mvance/unbound-rpi:latest` — ARM-native (multi-arch). The plain `mvance/unbound:latest` is amd64-only and runs under QEMU emulation on the Pi.
 
