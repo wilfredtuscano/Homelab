@@ -198,6 +198,15 @@ http:
         - https-redirectscheme
       tls: {}
       service: ollama
+    whisper:
+      entryPoints:
+        - "https"
+      rule: "Host(`whisper.local.wilfredtuscano.com`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: whisper
     chat:
       entryPoints:
         - "https"
@@ -338,6 +347,11 @@ http:
       loadBalancer:
         servers:
           - url: "http://192.168.1.205:11434/"
+        passHostHeader: true
+    whisper:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.205:9000/"
         passHostHeader: true
     chat:
       loadBalancer:
