@@ -59,11 +59,24 @@ Things this host must **not** do unattended:
 
 ### Kernel track
 
-jarvis boots the **OEM kernel** (`linux-oem-24.04`, 6.17.x), which is what carries Strix Halo
-support; `amdgpu` is in-tree there, not DKMS. The generic track (`linux-generic`, 6.8.x) is
-installed but never booted: it predates usable gfx1151 support, so it is not a real fallback. It
-should be removed, because it pulls kernel updates that are never used and raises spurious
-`/var/run/reboot-required` flags, which matters for any automation that acts on that flag.
+jarvis boots the **HWE kernel** (7.0.x, `linux-generic-hwe-24.04`). It got there through the OEM
+meta-package: on 2026-11-13 Ubuntu changed `linux-oem-24.04` from the 6.17 OEM kernel to a
+dependency on `linux-generic-hwe-24.04`, so a routine upgrade installed 7.0 and the next reboot
+booted it. `amdgpu` is in-tree, not DKMS, as it was on 6.17. Checked on 7.0.0-43 (2026-11-21):
+Ollama sees 96 GiB on gfx1151, gpt-oss:120b runs fully on the GPU at its usual speed, and the
+whisper stack's output is unchanged.
+
+The kernel is not in `stack-update`'s GPU-package guard, so kernel moves like this one arrive
+unattended and take effect on the next reboot. After any reboot onto a new kernel, check that the
+GPU is still in use (`rocm-smi`, Ollama's `/api/ps`, whisper's `/health`).
+
+- **Fallback:** the last 6.17 OEM kernel (`6.17.0-1033-oem`) is still installed and can be picked
+  from GRUB's "Advanced options". Nothing updates it any more (`linux-oem-6.17` is not installed),
+  so keep it only until 7.0 has proven itself, then remove it.
+- **Generic track** (`linux-generic`, 6.8.x): installed but never booted. It predates usable
+  gfx1151 support, so it is not a real fallback. It should be removed, because it pulls kernel
+  updates that are never used and raises spurious `/var/run/reboot-required` flags, which matters
+  for any automation that acts on that flag.
 
 ## Agent access
 
