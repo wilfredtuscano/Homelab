@@ -1,0 +1,41 @@
+services:
+  # Whisper large-v3 transcription over HTTP, with word-level timestamps.
+  # Served at https://whisper.local.wilfredtuscano.com via Traefik on dnspi.
+  # See README.md for the API, limits and measurements.
+  whisper:
+    build: .
+    image: local/whisper-rocm:1
+    # Built here, never pulled: a plain `docker compose pull` exits 1 on a local-only
+    # image, which would stop stack-update (set -e). With this, pull skips it and
+    # `up -d` rebuilds from cache.
+    pull_policy: build
+    container_name: whisper
+    # Strix Halo (gfx1151) needs no HSA_OVERRIDE_GFX_VERSION with this ROCm 7.2.4 base.
+    # Check for a silent CPU fallback after any image change: /health must report the
+    # GPU, and rocm-smi --showuse should move during a request.
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    # Numeric host GIDs (video, render): the rocm/pytorch image has no render group,
+    # so names fail with "unable to find group render".
+    group_add:
+      - "44"
+      - "993"
+    security_opt:
+      - seccomp=unconfined
+    environment:
+      - TZ=America/Los_Angeles
+      - WHISPER_MODEL=large-v3
+      - WHISPER_KEEP_ALIVE=600
+      - WHISPER_MAX_UPLOAD_MB=1024
+      - WHISPER_MAX_QUEUE=4
+      # ROCm flash attention: about 40% faster on gfx1151, output identical on the test clips.
+      - TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
+    volumes:
+      - whisper-models:/models
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
+
+volumes:
+  whisper-models:

@@ -29,6 +29,7 @@ Local AI inference server running Ollama with OpenWebUI as a frontend. Strix Hal
 5. Deploy stacks:
    1. `docker/portainer/` — see [Portainer Edge Agent guide](../guides/portainer-edge-agent.md)
    2. `docker/openwebui/`
+   3. `docker/whisper/` (build locally: `docker compose up -d --build`)
 
 ## Maintenance
 
@@ -91,6 +92,7 @@ and any command taking a free-form argument vector.
 | [docker/portainer/](docker/portainer/) | Portainer Edge Agent |
 | [docker/openwebui/](docker/openwebui/) | OpenWebUI (port 3000) |
 | [docker/immich-ml/](docker/immich-ml/) | Immich machine-learning, ROCm (port 3003) — serves Immich on cloud-ct |
+| [docker/whisper/](docker/whisper/) | Whisper large-v3 transcription API, ROCm (port 9000), with a Mac mlx-whisper fallback |
 | [monitoring-agent/](../monitoring-agent/) | Promtail, node-exporter, cAdvisor (shared stack) |
 
 ### Immich ML offload
