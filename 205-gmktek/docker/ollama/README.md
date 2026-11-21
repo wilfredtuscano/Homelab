@@ -9,7 +9,7 @@ Local LLM inference server running natively on Jarvis (not in Docker). Uses the 
 | GPU | AMD Radeon 8060S (gfx1151, Strix Halo iGPU) |
 | GPU memory | 96 GiB UMA + GTT spillover → ~111.5 GiB visible to ollama |
 | System ROCm | 7.2.0 (from `repo.radeon.com/rocm/apt/7.2`) |
-| Kernel | `6.17.0-oem` (ships amdgpu in-tree, no DKMS module) |
+| Kernel | `7.0.x` HWE (ships amdgpu in-tree, no DKMS module); see [Kernel track](../../README.md#kernel-track) |
 
 ## Access
 
