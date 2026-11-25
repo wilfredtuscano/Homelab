@@ -44,8 +44,11 @@ brew install --cask claude-code
 Software used to interact with the homelab:
 
 ```bash
-# Remote access to homelab over Tailscale
-brew install tailscale
+# Remote access to homelab over Tailscale: the Mac App Store app (id 1475387142),
+# not the `tailscale` formula. The formula is the separate open-source daemon; its
+# CLI cannot reach the app. The app bundles its own CLI:
+#   /Applications/Tailscale.app/Contents/MacOS/Tailscale status
+# Setup and client settings: ../guides/tailscale.md
 
 # VPN
 brew install --cask surfshark
@@ -76,8 +79,7 @@ brew install --cask webull
 ```bash
 brew install \
   neovim tmux fzf bat eza zoxide \
-  node nvm python@3.12 \
-  tailscale
+  node nvm python@3.12
 
 brew install --cask \
   iterm2 font-caskaydia-cove-nerd-font sublime-text \
@@ -85,4 +87,6 @@ brew install --cask \
   surfshark vlc qbittorrent \
   obs elgato-capture-device-utility astro-command-center \
   webull
+
+# Tailscale comes from the Mac App Store (see Homelab Clients above)
 ```
