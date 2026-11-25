@@ -57,7 +57,13 @@ sudo systemctl enable --now tailscale-ethtool.service
 ## Setup — Client Devices
 
 **macOS (App Store app):**
-Tailscale menu bar icon → **Use Tailscale subnets** (enable)
+Tailscale menu bar icon → **Use Tailscale subnets** (enable). **Use Tailscale DNS** must stay on
+too, or the split DNS for `local.wilfredtuscano.com` is ignored.
+
+If the menu bar shows **Logged out**, the device's node key has expired (180 days by default):
+log in again from the menu bar. Check this before travelling, since re-login needs a browser
+and you may not notice until an app fails. Key expiry can be turned off per device in the
+admin console (**Machines** → device → **Disable key expiry**).
 
 **Android:**
 Tailscale app → Settings → **Use Tailscale subnets** (enable)
